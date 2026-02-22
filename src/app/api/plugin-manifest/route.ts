@@ -6,13 +6,8 @@ const manifest: PluginManifest = {
   name: "Redis",
   description: "Explore Redis keys, values, and server metrics.",
   connections: {
-    listEndpoint: "api/connections/redis",
-    createEndpoint: "api/connections/redis",
-    testEndpoint: "api/connections/redis/test",
-    provider: "shell",
-    pluginTestEndpoint: "api/redis/connections/test",
     summaryEndpoint: "api/redis/connections/{connectionName}/summary",
-    routeTemplate: "/{connectionName}/keys",
+    openConnectionPath: "/{connectionName}/keys",
     schema: {
       title: "Add Redis Connection",
       description:

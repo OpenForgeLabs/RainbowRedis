@@ -12,8 +12,8 @@ importers:
         specifier: ^0.1.0
         version: 0.1.0
       '@openforgelabs/rainbow-contracts':
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.1.1
+        version: 0.1.1
       '@openforgelabs/rainbow-ui':
         specifier: ^0.1.0
         version: 0.1.0
@@ -440,8 +440,8 @@ packages:
   '@openforgelabs/rainbow-connections@0.1.0':
     resolution: {integrity: sha512-FoDh9EWk/2RJPhdchDZewUp1qYeqTPtcun9DXjj244V4SYnpERNlLvMgwB8pyNWFdb5pKg+HiTukDCiP4Llqsg==, tarball: https://npm.pkg.github.com/download/@openforgelabs/rainbow-connections/0.1.0/5b2a96bcae8fd678772bfc11136377409859a2c3}
 
-  '@openforgelabs/rainbow-contracts@0.1.0':
-    resolution: {integrity: sha512-/PzwUg2ePyABwh1W/WbsS0TPpByJ5sZL2yzH21Y477+q3e6cxVz9CbQFHyqnf48rbKCq3BduLj3pI0uBHG24Ew==, tarball: https://npm.pkg.github.com/download/@openforgelabs/rainbow-contracts/0.1.0/151b8e2bbedd86885ac6c33c9ba141255593a60c}
+  '@openforgelabs/rainbow-contracts@0.1.1':
+    resolution: {integrity: sha512-SKdXEo54NZDsdvy46A3tAf9Br5PuFF8HUau+fX4XVlo+8dQa1ybiCV1nqHNpJ2BfwbZr6hGbTxELKAr98XSudw==, tarball: https://npm.pkg.github.com/download/@openforgelabs/rainbow-contracts/0.1.1/c3e1ecbbc15219a113ddba2881e97843008ada39}
 
   '@openforgelabs/rainbow-ui@0.1.0':
     resolution: {integrity: sha512-4/vPyEpTIb3Cw5SucwpP9L4omQGWazHWTo6J2Y7Tgu0ggIx0XD1B8QnqiXRXlITJy3bKxXWXfvHcVvliDFdpMw==, tarball: https://npm.pkg.github.com/download/@openforgelabs/rainbow-ui/0.1.0/863afb1c09251a3795e9f8cfea358162cb209122}
@@ -2365,7 +2365,7 @@ snapshots:
 
   '@openforgelabs/rainbow-connections@0.1.0': {}
 
-  '@openforgelabs/rainbow-contracts@0.1.0': {}
+  '@openforgelabs/rainbow-contracts@0.1.1': {}
 
   '@openforgelabs/rainbow-ui@0.1.0': {}
 
