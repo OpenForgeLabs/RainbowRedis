@@ -44,5 +44,5 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tag }}
+            ghcr.io/openforgelabs/rainbow-redis:latest
+            ghcr.io/openforgelabs/rainbow-redis:${{ steps.meta.outputs.tag }}
