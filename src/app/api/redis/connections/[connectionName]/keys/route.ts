@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withRedisClient } from "@/infrastructure/redis/redisClient";
+import type { RedisKeyType } from "@/lib/types";
 import { ApiResponse, RedisKeyScanResultWithInfo } from "@/lib/types";
 
-const normalizeKeyType = (rawType: string | null | undefined) => {
+const normalizeKeyType = (rawType: string | null | undefined): RedisKeyType => {
   const value = (rawType ?? "").toLowerCase();
   if (value === "string") return "string";
   if (value === "hash") return "hash";

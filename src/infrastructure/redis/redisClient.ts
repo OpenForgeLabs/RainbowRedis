@@ -1,9 +1,9 @@
 import { createClient } from "redis";
-import type { RedisClientType } from "redis";
 import { resolveConnection as resolveSharedConnection } from "@openforgelabs/rainbow-connections";
 import type { RedisConnectionUpsertRequest } from "@/lib/types";
 
 type RedisConnectionPayload = RedisConnectionUpsertRequest;
+type RedisClient = ReturnType<typeof createClient>;
 
 export const resolveConnection = async (
   connectionName: string,
@@ -91,7 +91,7 @@ const buildClient = (payload: RedisConnectionPayload) => {
 export const withRedisClient = async <T>(
   connectionName: string,
   db: number | undefined,
-  handler: (client: RedisClientType) => Promise<T>,
+  handler: (client: RedisClient) => Promise<T>,
 ) => {
   const payload = await resolveConnection(connectionName);
   const client = buildClient(payload);

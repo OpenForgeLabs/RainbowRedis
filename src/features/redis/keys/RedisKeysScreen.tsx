@@ -486,10 +486,12 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
       <ConfirmActionModal
         open={deleteModalOpen}
         title="Delete key"
-        description="This will permanently delete the selected key."
+        description={
+          selectedKey
+            ? `This will permanently delete the key "${selectedKey}".`
+            : "This will permanently delete the selected key."
+        }
         confirmLabel="Delete key"
-        confirmValue={selectedKey ?? ""}
-        confirmPlaceholder="Type key name"
         onCancel={() => setDeleteModalOpen(false)}
         onConfirm={async () => {
           if (selectedKey) {
@@ -504,8 +506,6 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
         title="Flush database"
         description="This will permanently delete all keys in the selected database."
         confirmLabel="Flush DB"
-        confirmValue={db === "" ? "0" : String(db)}
-        confirmPlaceholder="Type DB index"
         onCancel={() => setFlushModalOpen(false)}
         onConfirm={async () => {
           const dbIndex = db === "" ? 0 : db;
