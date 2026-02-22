@@ -3,6 +3,12 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN corepack enable
 
+RUN --mount=type=secret,id=gh_packages_token \
+    if [ -f /run/secrets/gh_packages_token ]; then \
+      token="$(cat /run/secrets/gh_packages_token)"; \
+      printf "@openforgelabs:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=%s\n" "$token" > /root/.npmrc; \
+    fi
+
 COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install
 COPY . .
