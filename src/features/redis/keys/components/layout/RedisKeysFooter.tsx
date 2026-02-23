@@ -10,10 +10,10 @@ export function RedisKeysFooter({ connectionName }: RedisKeysFooterProps) {
   const { data, isLoading } = useRedisOverview(connectionName);
 
   return (
-    <footer className="flex items-center justify-between border-t border-border-dark bg-background/60 px-4 py-2 text-[10px] text-slate-400">
+    <footer className="flex items-center justify-between border-t border-border bg-background/60 px-4 py-2 text-[10px] text-muted-foreground">
       <div className="flex items-center gap-3">
         <span className="flex items-center gap-1.5">
-          <span className="size-1.5 rounded-full bg-emerald-500"></span>
+          <span className="size-1.5 rounded-full bg-success"></span>
           {isLoading
             ? "redis_version: ..."
             : `redis_version: ${data.version ?? "-"}`}
@@ -26,7 +26,7 @@ export function RedisKeysFooter({ connectionName }: RedisKeysFooterProps) {
         </span>
       </div>
       <div className="flex items-center gap-3">
-        <span className="font-bold uppercase tracking-widest text-action">
+        <span className="font-bold uppercase tracking-widest text-accent">
           UTF-8
         </span>
         <span>{isLoading ? "Line -, Col -" : "Line 1, Col 45"}</span>

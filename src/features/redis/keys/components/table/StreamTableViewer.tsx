@@ -13,7 +13,7 @@ export function StreamTableViewer({ entries }: StreamTableViewerProps) {
       {safeEntries.length === 0 && (
         <tr>
           <td className="px-6 py-4" colSpan={3}>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-subtle">
               No stream entries available.
             </p>
           </td>
@@ -22,9 +22,9 @@ export function StreamTableViewer({ entries }: StreamTableViewerProps) {
       {safeEntries.map((entry) => (
         <tr
           key={entry.id}
-          className="transition-colors hover:bg-surface-dark/60"
+          className="transition-colors hover:bg-surface/60"
         >
-          <td className="px-6 py-3 font-mono text-xs text-action">
+          <td className="px-6 py-3 font-mono text-xs text-accent">
             {entry.id}
           </td>
           <td className="px-6 py-3">
@@ -32,9 +32,9 @@ export function StreamTableViewer({ entries }: StreamTableViewerProps) {
               {Object.entries(entry.values).map(([field, value]) => (
                 <span
                   key={`${entry.id}-${field}`}
-                  className="rounded border border-border-dark bg-surface-dark/50 px-2 py-0.5 text-[10px] text-slate-200"
+                  className="rounded border border-border bg-surface/50 px-2 py-0.5 text-[10px] text-foreground"
                 >
-                  <span className="text-slate-400">{field}:</span>{" "}
+                  <span className="text-muted-foreground">{field}:</span>{" "}
                   {String(value)}
                 </span>
               ))}

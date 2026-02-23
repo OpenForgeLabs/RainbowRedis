@@ -22,11 +22,11 @@ export function HashTableEditor({
       {rows.map((row, index) => (
         <tr
           key={row.id}
-          className="group transition-colors hover:bg-surface-dark/60"
+          className="group transition-colors hover:bg-surface/60"
         >
           <td className="px-6 py-3">
             <Input
-              className="w-full border-0 bg-transparent p-0 font-mono text-sm text-action focus:ring-0"
+              className="w-full border-0 bg-transparent p-0 font-mono text-sm text-accent focus:ring-0"
               value={row.field}
               onChange={(event) =>
                 onChange(index, "field", event.target.value)
@@ -35,7 +35,7 @@ export function HashTableEditor({
           </td>
           <td className="px-6 py-3">
             <Input
-              className="w-full border-0 bg-transparent p-0 font-mono text-sm text-slate-200 focus:ring-0"
+              className="w-full border-0 bg-transparent p-0 font-mono text-sm text-foreground focus:ring-0"
               value={row.value}
               onChange={(event) =>
                 onChange(index, "value", event.target.value)
@@ -48,7 +48,7 @@ export function HashTableEditor({
               type="button"
               onClick={() => onRemove(index)}
             >
-              <span className="material-symbols-outlined text-[16px] text-slate-500 hover:text-rose-400">
+              <span className="material-symbols-outlined text-[16px] text-subtle hover:text-danger">
                 delete
               </span>
             </button>
@@ -58,7 +58,7 @@ export function HashTableEditor({
       <tr>
         <td className="px-6 py-4" colSpan={3}>
           <button
-            className="flex items-center gap-1 rounded-md border border-action/40 bg-action/10 px-2 py-1 text-xs font-semibold text-action transition hover:border-action/70 hover:bg-action/20"
+            className="flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-xs font-semibold text-foreground transition hover:border-primary/70 hover:bg-primary/20"
             type="button"
             onClick={onAdd}
           >

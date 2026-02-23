@@ -20,13 +20,13 @@ export function RedisDbSidebar({
   onFlushDb,
 }: RedisDbSidebarProps) {
   return (
-    <aside className="flex min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-xl border border-border-dark bg-surface-dark/40 p-4 lg:h-full lg:w-64">
+    <aside className="flex min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-xl border border-border-strong/50 bg-surface-2 p-4 shadow-[var(--rx-shadow-xs)] lg:h-full lg:w-64">
       <div className="mb-4">
-        <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
+        <p className="text-xs font-bold uppercase tracking-widest text-subtle">
           Redis Instance
         </p>
-        <div className="mt-2 flex items-center gap-2 text-sm text-slate-300">
-          <span className="size-2 rounded-full bg-emerald-500"></span>
+        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="size-2 rounded-full bg-success"></span>
           <span className="truncate">{connectionName}</span>
         </div>
       </div>
@@ -40,8 +40,8 @@ export function RedisDbSidebar({
               key={dbOption}
               className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-all ${
                 isActive
-                  ? "border border-action/40 bg-action/10 text-action"
-                  : "text-slate-400 hover:bg-surface-dark"
+                  ? "border border-primary/40 bg-primary/10 text-foreground"
+                  : "text-muted-foreground hover:bg-surface-3 hover:text-foreground"
               }`}
               type="button"
               onClick={() => onSelectDb(dbOption)}
@@ -60,7 +60,7 @@ export function RedisDbSidebar({
         })}
       </div>
       <button
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 py-2 text-xs font-bold text-rose-400 transition-all hover:bg-rose-500 hover:text-white"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-danger/40 bg-danger/10 py-2 text-xs font-bold text-danger transition-all hover:bg-danger hover:text-danger-foreground"
         type="button"
         onClick={onFlushDb}
       >

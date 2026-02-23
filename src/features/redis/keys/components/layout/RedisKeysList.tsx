@@ -36,8 +36,8 @@ export function RedisKeysList({
   typeBadgeStyles,
 }: RedisKeysListProps) {
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col border-b border-border-dark lg:border-b-0 lg:border-r">
-      <div className="flex items-center border-b border-border-dark bg-surface-dark/50 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+    <div className="flex min-h-0 w-full flex-1 flex-col border-b border-border lg:border-b-0 lg:border-r">
+      <div className="flex items-center border-b border-border bg-surface/50 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-subtle">
         <div className="w-1/2">Key Name</div>
         <div className="w-1/6">Type</div>
         <div className="w-1/6 text-right">TTL</div>
@@ -54,10 +54,10 @@ export function RedisKeysList({
           return (
             <button
               key={key}
-              className={`flex w-full items-center border-b border-border-dark/50 px-4 py-3 text-left text-sm transition-all ${
+              className={`flex w-full items-center border-b border-border/50 px-4 py-3 text-left text-sm transition-all ${
                 key === selectedKey
-                  ? "border-l-2 border-l-action bg-action/10 text-white"
-                  : "text-slate-300 hover:bg-surface-dark/60"
+                  ? "border-l-2 border-l-accent bg-accent/20 text-foreground"
+                  : "text-muted-foreground hover:bg-surface/60"
               }`}
               type="button"
               onClick={() => onSelectKey(key)}
@@ -65,7 +65,7 @@ export function RedisKeysList({
               <div className="w-1/2 truncate font-mono">
                 {key}
                 {isLocal && (
-                  <span className="ml-2 rounded bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-amber-300">
+                  <span className="ml-2 rounded bg-warning/20 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-warning">
                     Draft
                   </span>
                 )}
@@ -77,21 +77,21 @@ export function RedisKeysList({
                   {type}
                 </span>
               </div>
-              <div className="w-1/6 text-right text-xs text-amber-400">
+              <div className="w-1/6 text-right text-xs text-warning">
                 {ttl}
               </div>
-              <div className="w-1/6 text-right text-xs text-slate-400">
+              <div className="w-1/6 text-right text-xs text-muted-foreground">
                 {size}
               </div>
             </button>
           );
         })}
       </div>
-      <div className="flex items-center justify-between border-t border-border-dark px-4 py-2 text-xs text-slate-400">
+      <div className="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-muted-foreground">
         <span>{resultsLabel}</span>
         <div className="flex items-center gap-2">
           <button
-            className="rounded border border-action/30 bg-action/10 px-2 py-1 font-semibold text-action transition hover:border-action/60 hover:bg-action/20 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded border border-border-subtle bg-control/60 px-2 py-1 font-semibold text-foreground transition hover:bg-control/80 disabled:cursor-not-allowed disabled:opacity-50"
             type="button"
             onClick={onPreviousPage}
             disabled={!hasPreviousPage}
@@ -99,7 +99,7 @@ export function RedisKeysList({
             Prev
           </button>
           <button
-            className="rounded border border-navigate/40 bg-navigate/10 px-2 py-1 font-semibold text-navigate transition hover:border-navigate/70 hover:bg-navigate/20 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded border border-border-subtle bg-control/60 px-2 py-1 font-semibold text-foreground transition hover:bg-control/80 disabled:cursor-not-allowed disabled:opacity-50"
             type="button"
             onClick={onNextPage}
             disabled={!hasNextPage}

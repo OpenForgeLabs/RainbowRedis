@@ -22,14 +22,14 @@ export function SetTableEditor({
   return (
     <tr>
       <td className="px-6 py-4" colSpan={3}>
-        <div className="rounded-lg border border-border-dark bg-background/40 p-4">
-          <div className="mb-3 flex items-center justify-between text-xs text-slate-400">
+        <div className="rounded-lg border border-border bg-background/40 p-4">
+          <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
             <span className="uppercase tracking-widest">Unique Members</span>
             <span className="font-mono">{rows.length} members</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {rows.length === 0 && (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-subtle">
                 No set members available.
               </p>
             )}
@@ -42,8 +42,8 @@ export function SetTableEditor({
                   key={row.id}
                   className={`group flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-mono ${
                     isDuplicate
-                      ? "border-rose-500/50 bg-rose-500/10 text-rose-300"
-                      : "border-border-dark bg-surface-dark/40 text-slate-200"
+                      ? "border-danger/50 bg-danger/10 text-danger"
+                      : "border-border bg-surface/40 text-foreground"
                   }`}
                 >
                   <Input
@@ -56,7 +56,7 @@ export function SetTableEditor({
                     type="button"
                     onClick={() => onRemove(index)}
                   >
-                    <span className="material-symbols-outlined text-[16px] text-slate-500 hover:text-rose-400">
+                    <span className="material-symbols-outlined text-[16px] text-subtle hover:text-danger">
                       delete
                     </span>
                   </button>
@@ -64,7 +64,7 @@ export function SetTableEditor({
               );
             })}
             <button
-              className="flex items-center gap-1 rounded-md border border-action/40 bg-action/10 px-2 py-1 text-xs font-semibold text-action transition hover:border-action/70 hover:bg-action/20"
+              className="flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-xs font-semibold text-foreground transition hover:border-primary/70 hover:bg-primary/20"
               type="button"
               onClick={onAdd}
             >
@@ -75,7 +75,7 @@ export function SetTableEditor({
             </button>
           </div>
           {hasDuplicates && (
-            <p className="mt-2 text-[11px] text-rose-300">
+            <p className="mt-2 text-[11px] text-danger">
               Set members must be unique.
             </p>
           )}

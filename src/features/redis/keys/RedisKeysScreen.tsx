@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AsyncGate } from "@openforgelabs/rainbow-ui";
+import { AsyncGate, Button, ConfirmActionModal, InlineSpinner } from "@openforgelabs/rainbow-ui";
 import { RedisKeyValueEditor } from "@/features/redis/keys/components/editors/RedisKeyValueEditor";
 import { RedisValueEditorHandle } from "@/features/redis/keys/components/editors/RedisValueEditorTypes";
 import { AddKeyModal } from "@/features/redis/keys/components/layout/AddKeyModal";
@@ -11,12 +11,10 @@ import { RedisKeysFooter } from "@/features/redis/keys/components/layout/RedisKe
 import { RedisKeyHeader } from "@/features/redis/keys/components/layout/RedisKeyHeader";
 import { RedisKeysFilters } from "@/features/redis/keys/components/layout/RedisKeysFilters";
 import { RedisKeysList } from "@/features/redis/keys/components/layout/RedisKeysList";
-import { ConfirmActionModal } from "@openforgelabs/rainbow-ui";
 import { useRedisKeyActions } from "@/features/redis/keys/hooks/useRedisKeyActions";
 import { useRedisKeys } from "@/features/redis/keys/hooks/useRedisKeys";
 import { fetchRedisDbSize } from "@/features/redis/keys/services/redisDbSizeService";
 import { RedisKeyType } from "@/lib/types";
-import { InlineSpinner } from "@openforgelabs/rainbow-ui";
 
 const DB_OPTIONS = Array.from({ length: 16 }, (_, idx) => idx);
 const TYPE_FILTERS: Array<"all" | RedisKeyType> = [
@@ -30,13 +28,13 @@ const TYPE_FILTERS: Array<"all" | RedisKeyType> = [
 ];
 
 const TYPE_BADGE_STYLES: Record<string, string> = {
-  string: "bg-blue-500/10 text-blue-300 border-blue-500/30",
-  hash: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
-  list: "bg-amber-500/10 text-amber-300 border-amber-500/30",
-  set: "bg-purple-500/10 text-purple-300 border-purple-500/30",
-  zset: "bg-pink-500/10 text-pink-300 border-pink-500/30",
-  stream: "bg-sky-500/10 text-sky-300 border-sky-500/30",
-  unknown: "bg-slate-500/10 text-slate-300 border-slate-500/30",
+  string: "bg-viz-1/10 text-viz-1 border-viz-1/30",
+  hash: "bg-viz-2/10 text-viz-2 border-viz-2/30",
+  list: "bg-viz-3/10 text-viz-3 border-viz-3/30",
+  set: "bg-viz-4/10 text-viz-4 border-viz-4/30",
+  zset: "bg-viz-5/10 text-viz-5 border-viz-5/30",
+  stream: "bg-viz-6/10 text-viz-6 border-viz-6/30",
+  unknown: "bg-control/40 text-muted-foreground border-border",
 };
 
 const TYPE_DESCRIPTIONS: Record<RedisKeyType, string> = {
@@ -317,50 +315,50 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
   }, []);
 
   return (
-    <div className="mt-3 flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background/50 pb-3 lg:pb-4">
+    <div className="mt-3 flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface/30 pb-3 lg:pb-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3 px-2 sm:px-3 lg:px-4">
         <div>
-          <h1 className="text-xl font-semibold text-slate-100">
+          <h1 className="text-xl font-semibold text-foreground">
             Redis Keys
           </h1>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-muted-foreground">
             Managing keys for {connectionName}.
           </p>
           <Link
-            className="mt-1 inline-flex text-xs font-medium text-slate-400 transition-colors hover:text-action"
+            className="mt-1 inline-flex text-xs font-medium text-muted-foreground transition-colors hover:text-accent"
             href={`/${encodeURIComponent(connectionName)}`}
           >
             View overview
           </Link>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            className="flex items-center gap-2 rounded-lg border border-navigate/40 bg-navigate/10 px-4 py-2 text-sm font-semibold text-navigate transition-colors hover:border-navigate/70 hover:bg-navigate/20"
-            type="button"
+          <Button
+            variant="solid"
+            tone="accent"
             onClick={() => setServerInfoOpen(true)}
           >
             <span className="material-symbols-outlined text-[18px]">info</span>
             Server Info
-          </button>
-          <button
-            className="flex items-center gap-2 rounded-lg border border-action/30 bg-action/10 px-3 py-2 text-sm font-medium text-action transition-colors hover:border-action/60 hover:bg-action/20 disabled:cursor-not-allowed disabled:opacity-60"
+          </Button>
+          <Button
+            variant="outline"
+            tone="neutral"
             onClick={refreshKeys}
-            type="button"
             disabled={isLoading}
           >
             {isLoading ? (
-              <InlineSpinner className="size-4 border-slate-300" />
+              <InlineSpinner className="size-4 border-border-subtle" />
             ) : (
               <span className="material-symbols-outlined text-[18px]">
                 refresh
               </span>
             )}
             {isLoading ? "Refreshing" : "Refresh"}
-          </button>
+          </Button>
         </div>
       </div>
       <div className="flex max-h-[calc(100dvh-90px)] min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border-dark bg-surface-dark/30">
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border-strong/50 bg-surface shadow-[var(--rx-shadow-xs)]">
           <RedisKeysFilters
             pattern={pattern}
             filterType={filterType}
@@ -420,7 +418,7 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
                 }}
                 aria-label="Resize panels"
               >
-                <span className="mx-auto w-0.5 bg-border-dark/70 group-hover:bg-action/70" />
+                <span className="mx-auto w-0.5 bg-border/70 group-hover:bg-primary/70" />
               </button>
 
               <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -469,7 +467,7 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
                         value={selectedValue?.value}
                       />
                     ) : (
-                      <div className="flex flex-1 items-center justify-center text-sm text-slate-500">
+                      <div className="flex flex-1 items-center justify-center text-sm text-subtle">
                         Select a key to view its value.
                       </div>
                     )}

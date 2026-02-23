@@ -1,6 +1,6 @@
 "use client";
 
-import { InlineSpinner, SearchInput, Select } from "@openforgelabs/rainbow-ui";
+import { Button, InlineSpinner, SearchInput, Select } from "@openforgelabs/rainbow-ui";
 import { RedisKeyType } from "@/lib/types";
 
 type RedisKeysFiltersProps = {
@@ -75,14 +75,16 @@ export function RedisKeysFilters({
                   </option>
                 ))}
               </Select>
-              <button
-                className="flex h-10 items-center rounded border border-transparent bg-danger px-3 text-[11px] font-bold uppercase text-danger-foreground shadow-[var(--rx-shadow-sm)] transition hover:bg-danger-hover"
-                type="button"
+              <Button
+                className="h-10 px-3 text-[11px] uppercase"
+                variant="solid"
+                tone="danger"
+                size="sm"
                 onClick={onFlushDb}
                 title={`Flush DB ${db === "" ? 0 : db}`}
               >
                 Flush
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -107,26 +109,30 @@ export function RedisKeysFilters({
             ))}
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <button
-              className="flex items-center gap-1 rounded bg-primary px-3 py-1 text-[11px] font-bold uppercase text-primary-foreground shadow-[var(--rx-shadow-sm)] transition hover:bg-primary/90"
+            <Button
+              className="h-7 px-3 text-[11px] uppercase"
+              size="sm"
+              variant="solid"
+              tone="primary"
               onClick={onSearch}
-              type="button"
             >
               <span className="material-symbols-outlined text-[14px]">
                 sync
               </span>
               Scan
-            </button>
-            <button
-              className="flex items-center gap-1 rounded bg-accent px-3 py-1 text-[11px] font-bold uppercase text-accent-foreground shadow-[var(--rx-shadow-sm)] transition hover:bg-accent/90"
-              type="button"
+            </Button>
+            <Button
+              className="h-7 px-3 text-[11px] uppercase"
+              size="sm"
+              variant="solid"
+              tone="accent"
               onClick={onAddKey}
             >
               <span className="material-symbols-outlined text-[14px]">
                 add
               </span>
               Add Key
-            </button>
+            </Button>
           </div>
         </div>
       </div>

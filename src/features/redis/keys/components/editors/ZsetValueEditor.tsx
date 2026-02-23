@@ -103,8 +103,8 @@ export const ZsetValueEditor = forwardRef<
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between border-b border-border-dark bg-surface-dark/50 px-6 py-3">
-        <div className="flex flex-wrap items-center gap-3 text-xs font-bold uppercase tracking-widest text-slate-400">
+      <div className="flex items-center justify-between border-b border-border bg-surface/50 px-6 py-3">
+        <div className="flex flex-wrap items-center gap-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">
           <span>Values</span>
           <SegmentedControl
             value={view}
@@ -115,7 +115,7 @@ export const ZsetValueEditor = forwardRef<
             ]}
           />
         </div>
-        <span className="text-[10px] uppercase tracking-widest text-slate-500">
+        <span className="text-[10px] uppercase tracking-widest text-subtle">
           zset
         </span>
       </div>
@@ -124,18 +124,18 @@ export const ZsetValueEditor = forwardRef<
         {view === "table" ? (
           <div className="flex flex-col gap-6">
             <div>
-              <div className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+              <div className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-subtle">
                 Entries
               </div>
               <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 border-b border-border-dark bg-background text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <thead className="sticky top-0 border-b border-border bg-background text-[10px] font-bold uppercase tracking-wider text-subtle">
                   <tr>
                     <th className="px-6 py-3 w-1/3">Member</th>
                     <th className="px-6 py-3">Score</th>
                     <th className="px-6 py-3 w-16"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-dark">
+                <tbody className="divide-y divide-border">
                   <ZsetTableEditor
                     rows={rows}
                     onChange={(index, key, value) => {
@@ -168,10 +168,10 @@ export const ZsetValueEditor = forwardRef<
             <JsonSyntaxTextarea
               value={rawText}
               onChange={handleRawChange}
-              className="min-h-[280px] rounded-lg border border-border-dark bg-background/40"
+              className="min-h-[280px] rounded-lg border border-border bg-background/40"
             />
             {parseError && (
-              <p className="mt-2 text-[11px] text-rose-300">{parseError}</p>
+              <p className="mt-2 text-[11px] text-danger">{parseError}</p>
             )}
           </div>
         )}
