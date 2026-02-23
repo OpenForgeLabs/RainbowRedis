@@ -1,0 +1,23 @@
+name: Feature request
+description: Propose a new capability
+title: "[Feature]: "
+labels: ["feature"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: UX/behavior impact
+    validations:
+      required: false
