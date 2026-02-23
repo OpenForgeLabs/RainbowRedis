@@ -88,8 +88,8 @@ export const StringValueEditor = forwardRef<
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between border-b border-border-dark bg-surface-dark/50 px-6 py-3">
-        <div className="flex flex-wrap items-center gap-3 text-xs font-bold uppercase tracking-widest text-slate-400">
+      <div className="flex items-center justify-between border-b border-border bg-surface/50 px-6 py-3">
+        <div className="flex flex-wrap items-center gap-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">
           <span>Values</span>
           <SegmentedControl
             value={view}
@@ -100,7 +100,7 @@ export const StringValueEditor = forwardRef<
             ]}
           />
         </div>
-        <span className="text-[10px] uppercase tracking-widest text-slate-500">
+        <span className="text-[10px] uppercase tracking-widest text-subtle">
           string
         </span>
       </div>
@@ -109,18 +109,18 @@ export const StringValueEditor = forwardRef<
         {view === "table" ? (
           <div className="flex flex-col gap-6">
             <div>
-              <div className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+              <div className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-subtle">
                 Entries
               </div>
               <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 border-b border-border-dark bg-background text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <thead className="sticky top-0 border-b border-border bg-background text-[10px] font-bold uppercase tracking-wider text-subtle">
                   <tr>
                     <th className="px-6 py-3 w-1/3">Key</th>
                     <th className="px-6 py-3">Value</th>
                     <th className="px-6 py-3 w-16"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-dark">
+                <tbody className="divide-y divide-border">
                   <StringPreview preview={rawText || "—"} />
                 </tbody>
               </table>
@@ -129,12 +129,13 @@ export const StringValueEditor = forwardRef<
         ) : (
           <div className="p-6">
             <div className="mb-4 flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 rounded border border-border-dark bg-background px-2 py-1 text-[11px] text-slate-400">
+              <div className="flex items-center gap-2 rounded border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground">
                 <span className="material-symbols-outlined text-[14px]">
                   tune
                 </span>
                 <Select
-                  className="border-0 bg-transparent p-0 text-[11px] text-slate-300 focus:ring-0"
+                  size="sm"
+                  className="!h-6 !w-[82px] border-0 bg-transparent px-1 py-0 text-[11px] text-muted-foreground focus:ring-0"
                   value={contentFormat}
                   onChange={(event) =>
                     handleFormatChange(
@@ -150,8 +151,8 @@ export const StringValueEditor = forwardRef<
               <button
                 className={`rounded border px-3 py-1 text-[11px] font-bold uppercase transition-colors ${
                   prettify
-                    ? "border-action/40 bg-gradient-to-r from-action to-action-strong text-white shadow-[0_8px_16px_rgba(15,23,42,0.35)]"
-                    : "border-border-dark/70 text-slate-400 hover:border-action/50 hover:text-white"
+                    ? "border-primary/40 bg-primary text-primary-foreground shadow-[var(--rx-shadow-sm)]"
+                    : "border-border/70 text-muted-foreground hover:border-border-strong hover:text-foreground"
                 }`}
                 type="button"
                 onClick={() => {
@@ -168,7 +169,7 @@ export const StringValueEditor = forwardRef<
             <JsonSyntaxTextarea
               value={rawText}
               onChange={setRawText}
-              className="min-h-[280px] rounded-lg border border-border-dark bg-background/40"
+              className="min-h-[280px] rounded-lg border border-border bg-background/40"
             />
           </div>
         )}

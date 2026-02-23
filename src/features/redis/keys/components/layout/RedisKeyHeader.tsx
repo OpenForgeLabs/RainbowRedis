@@ -65,7 +65,7 @@ export function RedisKeyHeader({
   };
 
   return (
-    <div className="border-b border-border-dark px-4 py-3">
+    <div className="border-b border-border px-4 py-3">
       <div className="flex flex-col gap-3">
         <div className="flex min-w-0 flex-nowrap items-center justify-between gap-2">
           <div className="group flex min-w-0 max-w-[50%] items-center gap-2">
@@ -73,13 +73,14 @@ export function RedisKeyHeader({
               {isRenaming ? (
                 <div className="flex items-center gap-2">
                   <Input
-                    className="min-w-[200px] rounded-md bg-background py-1.5 text-sm font-semibold text-slate-100 focus:ring-action/40"
+                    className="min-w-[200px] rounded-md bg-background py-1.5 text-sm font-semibold text-foreground"
                     value={nameDraft}
                     onChange={(event) => onNameChange(event.target.value)}
                   />
                   <button
-                    className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-1.5 text-emerald-300 hover:bg-emerald-500 hover:text-white"
+                    className="rounded-md border border-transparent bg-success px-2 py-1.5 text-success-foreground shadow-[var(--rx-shadow-xs)] transition hover:bg-success-hover"
                     type="button"
+                    aria-label="Confirm rename"
                     onClick={onRenameConfirm}
                   >
                     <span className="material-symbols-outlined text-[18px]">
@@ -88,14 +89,14 @@ export function RedisKeyHeader({
                   </button>
                 </div>
               ) : (
-                <h3 className="whitespace-nowrap text-base font-bold leading-tight text-slate-100">
+                <h3 className="whitespace-nowrap text-base font-bold leading-tight text-foreground">
                   {selectedKey ?? "Select a key"}
                 </h3>
               )}
             </div>
             {isLocalKey && (
               <Select
-                className="rounded-md bg-background px-2 py-0.5 text-[10px] uppercase text-slate-200"
+                className="rounded-md bg-background px-2 py-0.5 text-[10px] uppercase text-foreground"
                 value={selectedType ?? "string"}
                 onChange={(event) =>
                   onTypeChange(event.target.value as RedisKeyType)
@@ -111,8 +112,9 @@ export function RedisKeyHeader({
             )}
             {!isRenaming && (
               <button
-                className="rounded p-1 text-slate-500 opacity-0 transition-opacity group-hover:opacity-100"
+                className="rounded p-1 text-subtle opacity-0 transition-opacity group-hover:opacity-100"
                 type="button"
+                aria-label="Rename key"
                 onClick={onRenameToggle}
               >
                 <span className="material-symbols-outlined text-[18px]">
@@ -124,8 +126,9 @@ export function RedisKeyHeader({
 
           <div className="ml-auto flex flex-nowrap items-center gap-2">
             <button
-              className="flex h-8 w-8 items-center justify-center rounded border border-action/30 bg-action/10 text-action transition hover:border-action/60 hover:bg-action/20"
+              className="flex h-8 w-8 items-center justify-center rounded border border-border bg-surface-2 text-foreground transition hover:border-border-strong hover:bg-surface-3"
               type="button"
+              aria-label="Refresh value"
               onClick={onRefreshValue}
               title="Refresh"
             >
@@ -134,8 +137,9 @@ export function RedisKeyHeader({
               </span>
             </button>
             <button
-              className="flex h-8 w-8 items-center justify-center rounded bg-gradient-to-r from-action to-action-strong text-white shadow-[0_10px_18px_rgba(15,23,42,0.35)] transition hover:from-action-strong hover:to-confirm disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-8 w-8 items-center justify-center rounded bg-primary text-primary-foreground shadow-[var(--rx-shadow-md)] transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
               type="button"
+              aria-label={isSaving ? "Saving changes" : "Save changes"}
               disabled={isSaving || !canSave}
               onClick={onSave}
               title={isSaving ? "Saving" : "Save changes"}
@@ -145,8 +149,9 @@ export function RedisKeyHeader({
               </span>
             </button>
             <button
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-500/40 bg-rose-500/10 text-rose-300 transition-colors hover:bg-rose-500 hover:text-white"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent bg-danger text-danger-foreground shadow-[var(--rx-shadow-sm)] transition-colors hover:bg-danger-hover"
               type="button"
+              aria-label="Delete key"
               onClick={onDelete}
               title="Delete"
             >
@@ -154,15 +159,16 @@ export function RedisKeyHeader({
                 delete
               </span>
             </button>
-            <div className="flex h-8 items-center gap-2 rounded-lg border border-border-dark bg-surface-dark/60 px-2 text-[10px] text-slate-300">
-              <span className="material-symbols-outlined text-[16px] text-amber-400">
+            <div className="flex h-8 items-center gap-2 rounded-lg border border-border-strong/40 bg-surface-2 px-2 text-[10px] text-muted-foreground">
+              <span className="material-symbols-outlined text-[16px] text-warning">
                 timer
               </span>
-              <span className="uppercase tracking-widest text-slate-400">
+              <span className="uppercase tracking-widest text-muted-foreground">
                 TTL
               </span>
               <Input
-                className="h-6 w-12 bg-background px-1 text-center text-[10px] font-mono text-slate-100"
+                size="sm"
+                className="!h-6 !w-12 bg-background px-1 text-center text-[10px] font-mono text-foreground"
                 type="text"
                 value={ttlValue}
                 onChange={(event) => onTtlChange(event.target.value)}
@@ -173,31 +179,31 @@ export function RedisKeyHeader({
         </div>
 
         {saveError && (
-          <p className="text-right text-[11px] text-rose-300">{saveError}</p>
+          <p className="text-right text-[11px] text-danger">{saveError}</p>
         )}
 
         {ttlError && (
-          <p className="text-right text-[11px] text-rose-300">{ttlError}</p>
+          <p className="text-right text-[11px] text-danger">{ttlError}</p>
         )}
 
-        <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
+        <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
           <div>
             <span className="block uppercase tracking-widest">Type</span>
             <span
-              className="text-xs font-semibold text-emerald-400"
+              className="text-xs font-semibold text-accent"
               title={typeDescription}
             >
               {selectedType ?? "unknown"}
             </span>
           </div>
-          <div className="h-6 w-px bg-border-dark"></div>
+          <div className="h-6 w-px bg-border"></div>
           <div>
             <span className="block uppercase tracking-widest">Memory</span>
             <span className="text-xs font-semibold">
               {selectedValue ? formatSize(selectedValue) : "-"}
             </span>
           </div>
-          <div className="h-6 w-px bg-border-dark"></div>
+          <div className="h-6 w-px bg-border"></div>
           <div>
             <span className="block uppercase tracking-widest">Encoding</span>
             <span className="text-xs font-semibold font-mono">-</span>
