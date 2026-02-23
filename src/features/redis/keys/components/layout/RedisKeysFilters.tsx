@@ -39,32 +39,33 @@ export function RedisKeysFilters({
   onAddKey,
 }: RedisKeysFiltersProps) {
   return (
-    <div className="border-b border-border-dark p-4">
+    <div className="border-b border-border p-4">
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex min-w-[220px] flex-1 flex-col gap-2">
-            <span className="text-xs font-semibold uppercase text-slate-500">
+            <span className="text-xs font-semibold uppercase text-subtle">
               Regex Search
             </span>
             <div className="flex items-center gap-2">
               <SearchInput
-                className="h-10 font-mono text-slate-200"
+                aria-label="Search keys"
+                className="h-10 font-mono text-foreground"
                 placeholder="Search keys..."
                 value={pattern}
                 onChange={(event) => onPatternChange(event.target.value)}
               />
-              <span className="rounded bg-background px-1.5 py-0.5 text-[10px] font-bold text-slate-400">
+              <span className="rounded bg-background px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
                 REGEX
               </span>
             </div>
           </label>
           <div className="flex min-w-[160px] flex-col gap-2">
-            <span className="text-xs font-semibold uppercase text-slate-500">
+            <span className="text-xs font-semibold uppercase text-subtle">
               Database
             </span>
             <div className="flex items-center gap-2">
               <Select
-                className="h-10 w-full text-sm text-slate-200"
+                className="h-10 w-full text-sm text-foreground"
                 value={db === "" ? 0 : db}
                 onChange={(event) => onSelectDb(Number(event.target.value))}
               >
@@ -75,7 +76,7 @@ export function RedisKeysFilters({
                 ))}
               </Select>
               <button
-                className="flex h-10 items-center rounded border border-danger/40 bg-danger/10 px-3 text-[11px] font-bold uppercase text-danger transition hover:border-danger/70 hover:bg-danger/20"
+                className="flex h-10 items-center rounded border border-transparent bg-danger px-3 text-[11px] font-bold uppercase text-danger-foreground shadow-[var(--rx-shadow-sm)] transition hover:bg-danger-hover"
                 type="button"
                 onClick={onFlushDb}
                 title={`Flush DB ${db === "" ? 0 : db}`}
@@ -92,14 +93,14 @@ export function RedisKeysFilters({
                 key={type}
                 className={`h-7 rounded px-3 text-[11px] font-bold uppercase transition-all ${
                   filterType === type
-                    ? "border border-action/40 bg-gradient-to-r from-action to-action-strong text-white"
-                    : "border border-border-dark/70 bg-background text-slate-400 hover:border-action/50 hover:text-white"
+                    ? "border border-transparent bg-primary text-primary-foreground shadow-[var(--rx-shadow-xs)]"
+                    : "border border-border/70 bg-background text-muted-foreground hover:border-border-strong hover:text-foreground"
                 }`}
                 type="button"
                 onClick={() => onFilterChange(type)}
               >
                 <span className="mr-2">{type}</span>
-                <span className="rounded bg-slate-900/70 px-1.5 py-0.5 text-[10px] text-slate-300">
+                <span className="rounded bg-surface-3/70 px-1.5 py-0.5 text-[10px] text-muted-foreground">
                   {typeCounts[type] ?? 0}
                 </span>
               </button>
@@ -107,7 +108,7 @@ export function RedisKeysFilters({
           </div>
           <div className="ml-auto flex items-center gap-2">
             <button
-              className="flex items-center gap-1 rounded bg-gradient-to-r from-action to-action-strong px-3 py-1 text-[11px] font-bold uppercase text-white shadow-[0_8px_16px_rgba(15,23,42,0.35)]"
+              className="flex items-center gap-1 rounded bg-primary px-3 py-1 text-[11px] font-bold uppercase text-primary-foreground shadow-[var(--rx-shadow-sm)] transition hover:bg-primary/90"
               onClick={onSearch}
               type="button"
             >
@@ -117,7 +118,7 @@ export function RedisKeysFilters({
               Scan
             </button>
             <button
-              className="flex items-center gap-1 rounded bg-gradient-to-r from-navigate to-navigate-strong px-3 py-1 text-[11px] font-bold uppercase text-white shadow-[0_8px_16px_rgba(15,23,42,0.35)]"
+              className="flex items-center gap-1 rounded bg-accent px-3 py-1 text-[11px] font-bold uppercase text-accent-foreground shadow-[var(--rx-shadow-sm)] transition hover:bg-accent/90"
               type="button"
               onClick={onAddKey}
             >
@@ -130,8 +131,8 @@ export function RedisKeysFilters({
         </div>
       </div>
       {isLoading && (
-        <div className="mt-3 flex items-center gap-2 text-xs text-slate-400">
-          <InlineSpinner className="size-3 border-slate-300" />
+        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+          <InlineSpinner className="size-3 border-border-subtle" />
           Loading keys...
         </div>
       )}
