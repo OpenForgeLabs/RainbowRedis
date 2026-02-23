@@ -1,10 +1,10 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from "react";
 import { ZsetTableEditor } from "@/features/redis/keys/components/table/ZsetTableEditor";
 import { SegmentedControl } from "@openforgelabs/rainbow-ui";
 import { RedisValueEditorHandle } from "@/features/redis/keys/components/editors/RedisValueEditorTypes";
-import { JsonSyntaxTextarea } from "@openforgelabs/rainbow-ui";
+import { JsonAwareTextarea } from "@/features/redis/keys/components/shared/JsonAwareTextarea";
 
 type ZsetRow = { id: string; member: string; score: string };
 
@@ -17,158 +17,144 @@ export const ZsetValueEditor = forwardRef<
   ZsetValueEditorProps
 >(({ value }, ref) => {
   const [view, setView] = useState<"table" | "raw">("raw");
-  const initialRows = Array.isArray(value) ? value : [];
-  const [rows, setRows] = useState<ZsetRow[]>(
-    initialRows.map((entry) => ({
-      id: `row-${Math.random().toString(36).slice(2, 8)}`,
-      member: entry.member,
-      score: String(entry.score),
-    })),
-  );
   const [rawText, setRawText] = useState(
-    JSON.stringify(initialRows, null, 2),
+    JSON.stringify(Array.isArray(value) ? value : [], null, 2),
   );
-  const [parseError, setParseError] = useState<string | null>(null);
-  const lastEditSource = useRef<"raw" | "table" | null>(null);
-
   useEffect(() => {
-    const nextRows = Array.isArray(value) ? value : [];
-    setRows(
-      nextRows.map((entry) => ({
-        id: `row-${Math.random().toString(36).slice(2, 8)}`,
-        member: entry.member,
-        score: String(entry.score),
-      })),
-    );
-    setRawText(JSON.stringify(nextRows, null, 2));
-    setParseError(null);
+    setRawText(JSON.stringify(Array.isArray(value) ? value : [], null, 2));
   }, [value]);
+  const parsed = useMemo(() => {
+    try {
+      const data = JSON.parse(rawText);
+      if (!Array.isArray(data)) {
+        return {
+          data: [] as Array<{ member: string; score: string }>,
+          error: "Raw content is not an array of {member, score}.",
+        };
+      }
+      return {
+        data: data.map((entry) => ({
+          member: String(entry?.member ?? ""),
+          score:
+            entry?.score === undefined || entry?.score === null
+              ? "0"
+              : String(entry.score),
+        })),
+        error: null as string | null,
+      };
+    } catch {
+      return {
+        data: [] as Array<{ member: string; score: string }>,
+        error: "Invalid JSON.",
+      };
+    }
+  }, [rawText]);
+  const parseError = parsed.error;
+  const rows = useMemo<ZsetRow[]>(
+    () =>
+      parsed.data.map((entry, index) => ({
+        id: `row-${index}`,
+        member: entry.member,
+        score: entry.score,
+      })),
+    [parsed.data],
+  );
 
   useImperativeHandle(ref, () => ({
     getValue: () =>
-      rows.map((row) => ({
+      parsed.data.map((row) => ({
         member: row.member,
         score: Number(row.score),
       })),
     hasErrors: () =>
-      rows.some((row) => row.member.trim() === "" || Number.isNaN(Number(row.score))),
+      parsed.data.some(
+        (row) => row.member.trim() === "" || Number.isNaN(Number(row.score)),
+      ),
   }));
 
-  useEffect(() => {
-    if (lastEditSource.current === "raw") {
-      return;
-    }
-    if (view !== "table") {
-      return;
-    }
-    setRawText(
-      JSON.stringify(
-        rows.map((row) => ({
-          member: row.member,
-          score: Number(row.score),
-        })),
-        null,
-        2,
-      ),
-    );
-    setParseError(null);
-  }, [rows, view]);
-
-  const handleRawChange = (nextValue: string) => {
-    lastEditSource.current = "raw";
-    setRawText(nextValue);
-    try {
-      const parsed = JSON.parse(nextValue);
-      if (Array.isArray(parsed)) {
-        setRows(
-          parsed.map((entry) => ({
-            id: `row-${Math.random().toString(36).slice(2, 8)}`,
-            member: String(entry?.member ?? ""),
-            score:
-              entry?.score === undefined || entry?.score === null
-                ? "0"
-                : String(entry.score),
-          })),
-        );
-        setParseError(null);
-      } else {
-        setParseError("Raw content is not an array of {member, score}.");
-      }
-    } catch {
-      setParseError("Invalid JSON.");
-    } finally {
-      lastEditSource.current = null;
-    }
-  };
-
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between border-b border-border bg-surface/50 px-6 py-3">
-        <div className="flex flex-wrap items-center gap-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          <span>Values</span>
+    <div className="flex min-h-0 flex-1 flex-col bg-surface/10">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-2/60 px-4 py-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+            View Mode
+          </span>
           <SegmentedControl
+            size="sm"
             value={view}
             onChange={(next) => setView(next)}
             items={[
-              { value: "raw", label: "Raw" },
-              { value: "table", label: "Table" },
+              { value: "raw", label: "Editor" },
+              { value: "table", label: "Scores" },
             ]}
           />
         </div>
-        <span className="text-[10px] uppercase tracking-widest text-subtle">
-          zset
-        </span>
       </div>
 
       <div className="custom-scrollbar flex-1 overflow-auto">
         {view === "table" ? (
-          <div className="flex flex-col gap-6">
-            <div>
-              <div className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-subtle">
-                Entries
-              </div>
+          <div className="p-4">
+            <div className="overflow-hidden rounded-lg border border-border bg-background/30">
               <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 border-b border-border bg-background text-[10px] font-bold uppercase tracking-wider text-subtle">
+                <thead className="sticky top-0 border-b border-border bg-surface/30 text-[10px] font-bold uppercase tracking-wider text-subtle">
                   <tr>
-                    <th className="px-6 py-3 w-1/3">Member</th>
-                    <th className="px-6 py-3">Score</th>
-                    <th className="px-6 py-3 w-16"></th>
+                    <th className="w-1/2 px-4 py-2">Member</th>
+                    <th className="px-4 py-2">Score</th>
+                    <th className="w-12 px-4 py-2"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   <ZsetTableEditor
                     rows={rows}
-                    onChange={(index, key, value) => {
-                      lastEditSource.current = "table";
-                      setRows((previous) =>
-                        previous.map((row, idx) =>
-                          idx === index ? { ...row, [key]: value } : row,
+                    onChange={(index, key, value) =>
+                      setRawText(
+                        JSON.stringify(
+                          rows.map((row, idx) =>
+                            idx === index
+                              ? { member: key === "member" ? value : row.member, score: key === "score" ? value : row.score }
+                              : { member: row.member, score: row.score },
+                          ),
+                          null,
+                          2,
                         ),
-                      );
-                    }}
+                      )
+                    }
                     onRemove={(index) =>
-                      setRows((previous) =>
-                        previous.filter((_, idx) => idx !== index),
+                      setRawText(
+                        JSON.stringify(
+                          rows
+                            .filter((_, idx) => idx !== index)
+                            .map((row) => ({ member: row.member, score: row.score })),
+                          null,
+                          2,
+                        ),
                       )
                     }
                     onAdd={() =>
-                      setRows((previous) => [
-                        ...previous,
-                        { id: `row-${Date.now()}`, member: "", score: "0" },
-                      ])
+                      setRawText(
+                        JSON.stringify(
+                          [...rows.map((row) => ({ member: row.member, score: row.score })), { member: "", score: "0" }],
+                          null,
+                          2,
+                        ),
+                      )
                     }
                     empty={rows.length === 0}
                   />
                 </tbody>
               </table>
             </div>
+            {parseError ? (
+              <p className="mt-2 text-[11px] text-danger">{parseError}</p>
+            ) : null}
           </div>
         ) : (
-          <div className="p-6">
-            <JsonSyntaxTextarea
+          <div className="p-2">
+            <JsonAwareTextarea
               value={rawText}
-              onChange={handleRawChange}
-              className="min-h-[280px] rounded-lg border border-border bg-background/40"
+              onChange={setRawText}
+              className="h-full"
+              minHeightClassName="min-h-[320px]"
             />
             {parseError && (
               <p className="mt-2 text-[11px] text-danger">{parseError}</p>

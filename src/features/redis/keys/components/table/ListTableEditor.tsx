@@ -19,47 +19,48 @@ export function ListTableEditor({
 }: ListTableEditorProps) {
   return (
     <tr>
-      <td className="px-6 py-4" colSpan={3}>
-        <div className="rounded-lg border border-border bg-background/40 p-4">
-          <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
-            <span className="uppercase tracking-widest">Ordered Items</span>
+      <td className="px-4 py-3" colSpan={3}>
+        <div className="rounded-lg border border-border/70 bg-surface/30 p-3">
+          <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+            <span className="uppercase tracking-widest">Ordered items</span>
             <span className="font-mono">{rows.length} items</span>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
             {rows.length === 0 && (
               <p className="text-xs text-subtle">No list items available.</p>
             )}
             {rows.map((row, index) => (
               <div
                 key={row.id}
-                className="group flex items-center gap-3 rounded-md border border-border/70 bg-surface/40 px-3 py-2"
+                className="group flex items-center gap-3 rounded-lg border border-border/50 bg-background/40 p-2 transition-colors hover:border-accent/30"
               >
-                <span className="text-xs text-subtle">{index}</span>
+                <span className="w-6 select-none text-right font-mono text-[10px] text-subtle">
+                  {index}
+                </span>
                 <Input
-                  className="flex-1 border-0 bg-transparent p-0 font-mono text-xs text-foreground focus:ring-0"
+                  size="sm"
+                  className="flex-1 border-0 bg-transparent p-0 font-mono text-sm text-foreground focus:ring-0"
                   value={row.value}
                   onChange={(event) => onChange(index, event.target.value)}
                 />
                 <button
-                  className="opacity-0 transition-opacity group-hover:opacity-100"
+                  className="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-danger/10"
                   type="button"
                   onClick={() => onRemove(index)}
+                  aria-label="Remove item"
                 >
                   <span className="material-symbols-outlined text-[16px] text-subtle hover:text-danger">
-                    delete
+                    close
                   </span>
                 </button>
               </div>
             ))}
             <button
-              className="mt-2 flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-xs font-semibold text-foreground transition hover:border-primary/70 hover:bg-primary/20"
+              className="mt-3 rounded-lg border border-dashed border-border px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-subtle transition-colors hover:bg-surface-3"
               type="button"
               onClick={onAdd}
             >
-              <span className="material-symbols-outlined text-[16px]">
-                add_circle
-              </span>
-              Add new item
+              + Add item to list
             </button>
           </div>
         </div>

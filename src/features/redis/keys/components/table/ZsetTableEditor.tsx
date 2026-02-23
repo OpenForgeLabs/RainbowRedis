@@ -31,33 +31,38 @@ export function ZsetTableEditor({
         </tr>
       )}
       {rows.map((entry, index) => (
-        <tr
-          key={entry.id}
-          className="group transition-colors hover:bg-surface/60"
-        >
-          <td className="px-6 py-3 font-mono text-xs text-accent">
+        <tr key={entry.id} className="group transition-colors hover:bg-warning/5">
+          <td className="px-4 py-2 font-mono text-xs text-foreground">
             <Input
-              className="w-full border-0 bg-transparent p-0 font-mono text-xs text-accent focus:ring-0"
+              size="sm"
+              className="w-full border-0 bg-transparent p-0 font-mono text-xs text-foreground focus:ring-0"
               value={entry.member}
               onChange={(event) =>
                 onChange(index, "member", event.target.value)
               }
             />
           </td>
-          <td className="px-6 py-3 text-xs text-foreground">
-            <Input
-              className="w-full border-0 bg-transparent p-0 text-xs text-foreground focus:ring-0"
-              value={entry.score}
-              onChange={(event) =>
-                onChange(index, "score", event.target.value)
-              }
-            />
+          <td className="px-4 py-2">
+            <div className="inline-flex items-center gap-2 rounded bg-warning/10 px-2 py-1">
+              <span className="text-[10px] font-bold italic text-warning">
+                score:
+              </span>
+              <Input
+                size="sm"
+                className="w-20 border-0 bg-transparent p-0 text-xs font-bold text-warning focus:ring-0"
+                value={entry.score}
+                onChange={(event) =>
+                  onChange(index, "score", event.target.value)
+                }
+              />
+            </div>
           </td>
-          <td className="px-6 py-3 text-right">
+          <td className="px-2 py-2 text-center">
             <button
-              className="opacity-0 transition-opacity group-hover:opacity-100"
+              className="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-danger/10"
               type="button"
               onClick={() => onRemove(index)}
+              aria-label="Remove member"
             >
               <span className="material-symbols-outlined text-[16px] text-subtle hover:text-danger">
                 delete
@@ -67,14 +72,14 @@ export function ZsetTableEditor({
         </tr>
       ))}
       <tr>
-        <td className="px-6 py-4" colSpan={3}>
+        <td className="px-4 py-3" colSpan={3}>
           <button
-            className="flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-xs font-semibold text-foreground transition hover:border-primary/70 hover:bg-primary/20"
+            className="flex h-7 items-center gap-1 rounded-md border border-accent/30 bg-accent/10 px-2 text-[10px] font-bold uppercase tracking-wide text-accent transition-colors hover:bg-accent/20"
             type="button"
             onClick={onAdd}
           >
-            <span className="material-symbols-outlined text-[16px]">
-              add_circle
+            <span className="material-symbols-outlined text-[14px]">
+              add
             </span>
             Add member
           </button>

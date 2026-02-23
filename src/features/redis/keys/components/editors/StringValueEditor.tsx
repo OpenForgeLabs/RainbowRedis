@@ -3,7 +3,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from "react";
 import { RedisValueEditorHandle } from "@/features/redis/keys/components/editors/RedisValueEditorTypes";
 import { StringPreview } from "@/features/redis/keys/components/shared/StringPreview";
-import { JsonSyntaxTextarea, SegmentedControl, Select } from "@openforgelabs/rainbow-ui";
+import { SegmentedControl, Select } from "@openforgelabs/rainbow-ui";
+import { JsonAwareTextarea } from "@/features/redis/keys/components/shared/JsonAwareTextarea";
 
 type StringValueEditorProps = {
   value: unknown;
@@ -87,37 +88,67 @@ export const StringValueEditor = forwardRef<
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between border-b border-border bg-surface/50 px-6 py-3">
-        <div className="flex flex-wrap items-center gap-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          <span>Values</span>
+    <div className="flex min-h-0 flex-1 flex-col bg-surface/10">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-2/60 px-4 py-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+            View Mode
+          </span>
           <SegmentedControl
+            size="sm"
             value={view}
             onChange={(next) => setView(next)}
             items={[
-              { value: "raw", label: "Raw" },
-              { value: "table", label: "Table" },
+              { value: "raw", label: "Editor" },
+              { value: "table", label: "Preview" },
             ]}
           />
         </div>
-        <span className="text-[10px] uppercase tracking-widest text-subtle">
-          string
-        </span>
+        <div className="flex items-center gap-2">
+          <Select
+            size="sm"
+            className="!h-7 !w-24 rounded-md bg-background/60 text-[11px]"
+            value={contentFormat}
+            onChange={(event) =>
+              handleFormatChange(event.target.value as "auto" | "json" | "text")
+            }
+            aria-label="Content format"
+          >
+            <option value="auto">Auto</option>
+            <option value="json">JSON</option>
+            <option value="text">Text</option>
+          </Select>
+          <button
+            className={`rounded border px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition-colors ${
+              prettify
+                ? "border-accent/40 bg-accent/20 text-accent"
+                : "border-border text-subtle hover:border-border-strong hover:text-foreground"
+            }`}
+            type="button"
+            onClick={() => {
+              setPrettify((prev) => {
+                const nextValue = !prev;
+                handlePrettify(nextValue);
+                return nextValue;
+              });
+            }}
+            disabled={contentFormat === "text"}
+          >
+            Prettify
+          </button>
+        </div>
       </div>
 
       <div className="custom-scrollbar flex-1 overflow-auto">
         {view === "table" ? (
-          <div className="flex flex-col gap-6">
-            <div>
-              <div className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-subtle">
-                Entries
-              </div>
+          <div className="p-4">
+            <div className="overflow-hidden rounded-lg border border-border bg-background/30">
               <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 border-b border-border bg-background text-[10px] font-bold uppercase tracking-wider text-subtle">
+                <thead className="sticky top-0 border-b border-border bg-surface/30 text-[10px] font-bold uppercase tracking-wider text-subtle">
                   <tr>
-                    <th className="px-6 py-3 w-1/3">Key</th>
-                    <th className="px-6 py-3">Value</th>
-                    <th className="px-6 py-3 w-16"></th>
+                    <th className="w-1/3 px-4 py-2">Key</th>
+                    <th className="px-4 py-2">Value</th>
+                    <th className="w-12 px-4 py-2"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -127,49 +158,12 @@ export const StringValueEditor = forwardRef<
             </div>
           </div>
         ) : (
-          <div className="p-6">
-            <div className="mb-4 flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 rounded border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground">
-                <span className="material-symbols-outlined text-[14px]">
-                  tune
-                </span>
-                <Select
-                  size="sm"
-                  className="!h-6 !w-[82px] border-0 bg-transparent px-1 py-0 text-[11px] text-muted-foreground focus:ring-0"
-                  value={contentFormat}
-                  onChange={(event) =>
-                    handleFormatChange(
-                      event.target.value as "auto" | "json" | "text",
-                    )
-                  }
-                >
-                  <option value="auto">Auto</option>
-                  <option value="json">JSON</option>
-                  <option value="text">Text</option>
-                </Select>
-              </div>
-              <button
-                className={`rounded border px-3 py-1 text-[11px] font-bold uppercase transition-colors ${
-                  prettify
-                    ? "border-primary/40 bg-primary text-primary-foreground shadow-[var(--rx-shadow-sm)]"
-                    : "border-border/70 text-muted-foreground hover:border-border-strong hover:text-foreground"
-                }`}
-                type="button"
-                onClick={() => {
-                  setPrettify((prev) => {
-                    const nextValue = !prev;
-                    handlePrettify(nextValue);
-                    return nextValue;
-                  });
-                }}
-              >
-                Prettify
-              </button>
-            </div>
-            <JsonSyntaxTextarea
+          <div className="flex h-full min-h-0 flex-col p-2">
+            <JsonAwareTextarea
               value={rawText}
               onChange={setRawText}
-              className="min-h-[280px] rounded-lg border border-border bg-background/40"
+              className="h-full"
+              minHeightClassName="min-h-[320px]"
             />
           </div>
         )}

@@ -1,15 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AsyncGate, Button, ConfirmActionModal, InlineSpinner } from "@openforgelabs/rainbow-ui";
+import { AsyncGate, Button, ConfirmActionModal } from "@openforgelabs/rainbow-ui";
 import { RedisKeyValueEditor } from "@/features/redis/keys/components/editors/RedisKeyValueEditor";
 import { RedisValueEditorHandle } from "@/features/redis/keys/components/editors/RedisValueEditorTypes";
 import { AddKeyModal } from "@/features/redis/keys/components/layout/AddKeyModal";
 import { RedisServerInfoModal } from "@/features/redis/keys/components/layout/RedisServerInfoModal";
 import { RedisKeysFooter } from "@/features/redis/keys/components/layout/RedisKeysFooter";
 import { RedisKeyHeader } from "@/features/redis/keys/components/layout/RedisKeyHeader";
-import { RedisKeysFilters } from "@/features/redis/keys/components/layout/RedisKeysFilters";
+import { RedisDbSidebar } from "@/features/redis/keys/components/layout/RedisDbSidebar";
 import { RedisKeysList } from "@/features/redis/keys/components/layout/RedisKeysList";
 import { useRedisKeyActions } from "@/features/redis/keys/hooks/useRedisKeyActions";
 import { useRedisKeys } from "@/features/redis/keys/hooks/useRedisKeys";
@@ -26,6 +25,7 @@ const TYPE_FILTERS: Array<"all" | RedisKeyType> = [
   "zset",
   "stream",
 ];
+const MAX_OPEN_TABS = 5;
 
 const TYPE_BADGE_STYLES: Record<string, string> = {
   string: "bg-viz-1/10 text-viz-1 border-viz-1/30",
@@ -56,6 +56,8 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
   const [db, setDb] = useState<number | "">(0);
   const [filterType, setFilterType] = useState<"all" | RedisKeyType>("all");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [openTabs, setOpenTabs] = useState<string[]>([]);
+  const [isListCollapsed, setIsListCollapsed] = useState(false);
   const [dbCounts, setDbCounts] = useState<
     Record<number, number | null | undefined>
   >({});
@@ -69,6 +71,15 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
   const [listPanelWidth, setListPanelWidth] = useState(380);
   const editorRef = useRef<RedisValueEditorHandle>(null);
   const dragStateRef = useRef<{ startX: number; startWidth: number } | null>(null);
+
+  const upsertTabWithLimit = useCallback((tabs: string[], key: string) => {
+    const withoutKey = tabs.filter((tab) => tab !== key);
+    const nextTabs = [...withoutKey, key];
+    if (nextTabs.length <= MAX_OPEN_TABS) {
+      return nextTabs;
+    }
+    return nextTabs.slice(nextTabs.length - MAX_OPEN_TABS);
+  }, []);
 
   const {
     data,
@@ -95,6 +106,10 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
     loadKeysRef.current(
       {
         pattern: pattern || undefined,
+        type:
+          filterType === "all" || filterType === "unknown"
+            ? undefined
+            : filterType,
         db: db === "" ? undefined : db,
         cursor: 0,
       },
@@ -106,7 +121,15 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
         [db]: undefined,
       }));
     }
-  }, [db, pattern]);
+  }, [db, filterType, pattern]);
+
+  const selectKey = useCallback((nextKey: string | null) => {
+    setSelectedKey(nextKey);
+    if (!nextKey) {
+      return;
+    }
+    setOpenTabs((previous) => upsertTabWithLimit(previous, nextKey));
+  }, [upsertTabWithLimit]);
 
   const selectedInfoFromBackend = selectedKey
     ? keyInfoMap[selectedKey]
@@ -137,7 +160,7 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
     selectedKey,
     selectedInfo: selectedInfoFromBackend,
     editorRef,
-    onSelectKey: setSelectedKey,
+    onSelectKey: selectKey,
     onRefreshKeys: refreshKeys,
     onRefreshKeyValue: refreshKeyValue,
     onRefreshKeyInfo: refreshKeyInfo,
@@ -180,7 +203,7 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
       return;
     }
     refreshKeys();
-  }, [db, pattern, refreshKeys]);
+  }, [db, pattern, filterType, refreshKeys]);
 
   useEffect(() => {
     setDbCounts({});
@@ -216,13 +239,13 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
   }, [allKeys, filterType, combinedKeyInfoMap]);
 
   const typeCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: filteredKeys.length };
-    for (const key of filteredKeys) {
+    const counts: Record<string, number> = { all: allKeys.length };
+    for (const key of allKeys) {
       const type = combinedKeyInfoMap[key]?.type ?? "unknown";
       counts[type] = (counts[type] ?? 0) + 1;
     }
     return counts;
-  }, [combinedKeyInfoMap, filteredKeys]);
+  }, [allKeys, combinedKeyInfoMap]);
 
   const isLocalKey = useMemo(() => {
     if (!selectedKey) {
@@ -241,7 +264,14 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
       return () => clearTimeout(timeout);
     }
     return undefined;
-  }, [filteredKeys, selectedKey]);
+  }, [filteredKeys, selectedKey, selectKey]);
+
+  useEffect(() => {
+    if (!selectedKey) {
+      return;
+    }
+    setOpenTabs((previous) => upsertTabWithLimit(previous, selectedKey));
+  }, [selectedKey, upsertTabWithLimit]);
 
   useEffect(() => {
     if (!selectedKey) {
@@ -291,6 +321,10 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
   };
 
   const selectedType = selectedInfo?.type ?? "unknown";
+  const visibleTabs = useMemo(
+    () => openTabs.filter((tabKey) => tabKey && (combinedKeyInfoMap[tabKey] || tabKey === selectedKey)),
+    [openTabs, combinedKeyInfoMap, selectedKey],
+  );
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
@@ -315,114 +349,197 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
   }, []);
 
   return (
-    <div className="mt-3 flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface/30 pb-3 lg:pb-4">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 px-2 sm:px-3 lg:px-4">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">
-            Redis Keys
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Managing keys for {connectionName}.
-          </p>
-          <Link
-            className="mt-1 inline-flex text-xs font-medium text-muted-foreground transition-colors hover:text-accent"
-            href={`/${encodeURIComponent(connectionName)}`}
-          >
-            View overview
-          </Link>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="solid"
-            tone="accent"
-            onClick={() => setServerInfoOpen(true)}
-          >
-            <span className="material-symbols-outlined text-[18px]">info</span>
-            Server Info
-          </Button>
-          <Button
-            variant="outline"
-            tone="neutral"
-            onClick={refreshKeys}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <InlineSpinner className="size-4 border-border-subtle" />
-            ) : (
-              <span className="material-symbols-outlined text-[18px]">
-                refresh
-              </span>
-            )}
-            {isLoading ? "Refreshing" : "Refresh"}
-          </Button>
-        </div>
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface/30">
+      <div className="flex items-center justify-end gap-2 px-2 py-2 sm:px-3 lg:px-4">
+        <Button size="sm" variant="solid" tone="primary" onClick={handleSearch} disabled={isLoading}>
+          <span className="material-symbols-outlined text-[14px]">sync</span>
+          {isLoading ? "Scanning" : "Scan"}
+        </Button>
+        <Button size="sm" variant="solid" tone="accent" onClick={() => setAddKeyOpen(true)}>
+          <span className="material-symbols-outlined text-[14px]">add</span>
+          New Key
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          tone="neutral"
+          onClick={() => setServerInfoOpen(true)}
+        >
+          <span className="material-symbols-outlined text-[16px]">info</span>
+          Server Info
+        </Button>
       </div>
-      <div className="flex max-h-[calc(100dvh-90px)] min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-2 pb-2 sm:px-3 lg:px-4 lg:pb-4">
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border-strong/50 bg-surface shadow-[var(--rx-shadow-xs)]">
-          <RedisKeysFilters
-            pattern={pattern}
-            filterType={filterType}
-            isLoading={isLoading}
-            typeFilters={TYPE_FILTERS}
-            db={db}
-            dbOptions={DB_OPTIONS}
-            dbCounts={dbCounts}
-            dbCountsLoading={dbCountsLoading}
-            typeCounts={typeCounts}
-            onPatternChange={setPattern}
-            onFilterChange={setFilterType}
-            onSelectDb={(dbOption) => {
-              setDb(dbOption);
-              void loadDbCount(dbOption);
-            }}
-            onFlushDb={() => setFlushModalOpen(true)}
-            onSearch={handleSearch}
-            onAddKey={() => setAddKeyOpen(true)}
-          />
-
           <AsyncGate
             isLoading={isLoading}
             error={error}
-            empty={!isLoading && filteredKeys.length === 0}
+            empty={false}
           >
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-              <div
-                className="flex min-h-0 flex-none flex-col"
-                style={{ width: listPanelWidth }}
-              >
-                <RedisKeysList
-                  keys={filteredKeys}
-                  selectedKey={selectedKey}
-                  keyInfoMap={combinedKeyInfoMap}
-                  selectedValue={selectedValue}
-                  localKeys={localKeys}
-                  resultsLabel={resultsLabel}
-                  hasNextPage={hasNextPage}
-                  hasPreviousPage={hasPreviousPage}
-                  formatTtl={formatTtl}
-                  formatSize={formatSize}
-                  onSelectKey={setSelectedKey}
-                  onNextPage={nextPage}
-                  onPreviousPage={previousPage}
-                  typeBadgeStyles={TYPE_BADGE_STYLES}
+            <div className="flex min-h-0 flex-1 overflow-hidden">
+              <div className="flex w-14 flex-col border-r border-border bg-surface-2">
+                <RedisDbSidebar
+                  connectionName={connectionName}
+                  db={db}
+                  dbOptions={DB_OPTIONS}
+                  dbCounts={dbCounts}
+                  dbCountsLoading={dbCountsLoading}
+                  onSelectDb={(dbOption) => {
+                    setDb(dbOption);
+                    void loadDbCount(dbOption);
+                  }}
+                  onFlushDb={() => setFlushModalOpen(true)}
                 />
               </div>
-              <button
-                type="button"
-                className="group hidden w-2 cursor-col-resize items-stretch bg-transparent lg:flex"
-                onMouseDown={(event) => {
-                  dragStateRef.current = {
-                    startX: event.clientX,
-                    startWidth: listPanelWidth,
-                  };
-                }}
-                aria-label="Resize panels"
-              >
-                <span className="mx-auto w-0.5 bg-border/70 group-hover:bg-primary/70" />
-              </button>
+
+              {!isListCollapsed ? (
+                <div
+                  className="flex min-h-0 flex-none flex-col border-r border-border bg-surface-2/30"
+                  style={{ width: listPanelWidth }}
+                >
+                  <div className="border-b border-border px-3 py-2">
+                    <div className="mb-2 flex items-center gap-2">
+                      <button
+                        type="button"
+                        className="ui-focus rounded-[var(--rx-radius-sm)] p-1 text-muted-foreground hover:bg-surface-3 hover:text-foreground"
+                        onClick={() => setIsListCollapsed(true)}
+                        title="Collapse keys panel"
+                        aria-label="Collapse keys panel"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">dock_to_left</span>
+                      </button>
+                      <div className="min-w-0 flex-1">
+                        <input
+                          className="h-8 w-full rounded-[var(--rx-radius-md)] border border-border bg-control px-2 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none"
+                          placeholder="Search keys (wildcard)..."
+                          value={pattern}
+                          onChange={(event) => setPattern(event.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="custom-scrollbar flex items-center gap-1 overflow-x-auto pb-1">
+                      {TYPE_FILTERS.map((type) => (
+                        <button
+                          key={type}
+                          className={`rounded px-2 py-1 text-[10px] font-bold uppercase transition-all ${
+                            filterType === type
+                              ? "border border-transparent bg-primary text-primary-foreground"
+                              : "border border-border/70 bg-background text-muted-foreground hover:border-border-strong hover:text-foreground"
+                          }`}
+                          type="button"
+                          onClick={() => setFilterType(type)}
+                        >
+                          {type}
+                          <span
+                            className={`ml-1 text-[9px] ${
+                              filterType === type
+                                ? "text-primary-foreground/90"
+                                : "text-foreground"
+                            }`}
+                          >
+                            {typeCounts[type] ?? 0}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <RedisKeysList
+                    keys={filteredKeys}
+                    selectedKey={selectedKey}
+                    keyInfoMap={combinedKeyInfoMap}
+                    selectedValue={selectedValue}
+                    localKeys={localKeys}
+                    resultsLabel={resultsLabel}
+                    hasNextPage={hasNextPage}
+                    hasPreviousPage={hasPreviousPage}
+                    formatTtl={formatTtl}
+                    formatSize={formatSize}
+                    onSelectKey={selectKey}
+                    onNextPage={nextPage}
+                    onPreviousPage={previousPage}
+                    typeBadgeStyles={TYPE_BADGE_STYLES}
+                  />
+                </div>
+              ) : (
+                <div className="hidden w-7 items-start justify-center border-r border-border bg-surface-2 pt-2 lg:flex">
+                  <button
+                    type="button"
+                    className="ui-focus rounded-[var(--rx-radius-sm)] p-1 text-muted-foreground hover:bg-surface-3 hover:text-foreground"
+                    onClick={() => setIsListCollapsed(false)}
+                    title="Expand keys panel"
+                    aria-label="Expand keys panel"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">dock_to_right</span>
+                  </button>
+                </div>
+              )}
+
+              {!isListCollapsed ? (
+                <button
+                  type="button"
+                  className="group hidden w-2 cursor-col-resize items-stretch bg-transparent lg:flex"
+                  onMouseDown={(event) => {
+                    dragStateRef.current = {
+                      startX: event.clientX,
+                      startWidth: listPanelWidth,
+                    };
+                  }}
+                  aria-label="Resize panels"
+                >
+                  <span className="mx-auto w-0.5 bg-border/70 group-hover:bg-primary/70" />
+                </button>
+              ) : null}
 
               <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                 <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                  <div className="custom-scrollbar flex h-10 items-center overflow-x-auto border-b border-border bg-surface-2">
+                    {visibleTabs.length ? (
+                      visibleTabs.map((tabKey) => {
+                        const tabType = combinedKeyInfoMap[tabKey]?.type ?? "unknown";
+                        const active = tabKey === selectedKey;
+                        return (
+                          <div
+                            key={tabKey}
+                            className={`group flex h-full w-40 flex-none items-center gap-2 border-r border-border px-3 ${
+                              active ? "bg-surface border-t-2 border-t-primary" : "bg-surface-2"
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              className={`min-w-0 flex-1 truncate text-left text-xs font-mono ${
+                                active ? "text-foreground" : "text-muted-foreground"
+                              }`}
+                              onClick={() => selectKey(tabKey)}
+                            >
+                              {tabKey}
+                            </button>
+                            <span className={`rounded border px-1.5 py-0.5 text-[9px] font-bold uppercase ${TYPE_BADGE_STYLES[tabType] ?? TYPE_BADGE_STYLES.unknown}`}>
+                              {tabType}
+                            </span>
+                            <button
+                              type="button"
+                              className="rounded p-0.5 text-subtle opacity-0 transition-opacity group-hover:opacity-100 hover:bg-surface-3 hover:text-foreground"
+                              aria-label={`Close tab ${tabKey}`}
+                              onClick={() => {
+                                setOpenTabs((previous) => previous.filter((item) => item !== tabKey));
+                                if (selectedKey === tabKey) {
+                                  const remainingTabs = visibleTabs.filter((item) => item !== tabKey);
+                                  selectKey(remainingTabs[remainingTabs.length - 1] ?? null);
+                                }
+                              }}
+                            >
+                              <span className="material-symbols-outlined text-[14px]">close</span>
+                            </button>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="px-3 text-xs text-muted-foreground">No key tabs open</div>
+                    )}
+                  </div>
+
                   <RedisKeyHeader
                     selectedKey={selectedKey}
                     selectedType={selectedType}

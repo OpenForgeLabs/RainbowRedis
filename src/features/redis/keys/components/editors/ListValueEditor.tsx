@@ -1,10 +1,10 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from "react";
 import { ListTableEditor } from "@/features/redis/keys/components/table/ListTableEditor";
 import { SegmentedControl } from "@openforgelabs/rainbow-ui";
 import { RedisValueEditorHandle } from "@/features/redis/keys/components/editors/RedisValueEditorTypes";
-import { JsonSyntaxTextarea } from "@openforgelabs/rainbow-ui";
+import { JsonAwareTextarea } from "@/features/redis/keys/components/shared/JsonAwareTextarea";
 
 type ListRow = { id: string; value: string };
 
@@ -17,136 +17,107 @@ export const ListValueEditor = forwardRef<
   ListValueEditorProps
 >(({ value }, ref) => {
   const [view, setView] = useState<"table" | "raw">("raw");
-  const initialRows = Array.isArray(value) ? value : [];
-  const [rows, setRows] = useState<ListRow[]>(
-    initialRows.map((item) => ({
-      id: `row-${Math.random().toString(36).slice(2, 8)}`,
-      value: item,
-    })),
-  );
-  const [rawText, setRawText] = useState(
-    JSON.stringify(initialRows, null, 2),
-  );
-  const [parseError, setParseError] = useState<string | null>(null);
-  const lastEditSource = useRef<"raw" | "table" | null>(null);
-
+  const [rawText, setRawText] = useState(JSON.stringify(Array.isArray(value) ? value : [], null, 2));
   useEffect(() => {
-    const nextRows = Array.isArray(value) ? value : [];
-    setRows(
-      nextRows.map((item) => ({
-        id: `row-${Math.random().toString(36).slice(2, 8)}`,
+    setRawText(JSON.stringify(Array.isArray(value) ? value : [], null, 2));
+  }, [value]);
+  const parsed = useMemo(() => {
+    try {
+      const data = JSON.parse(rawText);
+      if (!Array.isArray(data)) {
+        return { data: [] as string[], error: "Raw content is not a JSON array." };
+      }
+      return { data: data.map((item) => String(item)), error: null as string | null };
+    } catch {
+      return { data: [] as string[], error: "Invalid JSON." };
+    }
+  }, [rawText]);
+  const parseError = parsed.error;
+  const rows = useMemo<ListRow[]>(
+    () =>
+      parsed.data.map((item, index) => ({
+        id: `row-${index}`,
         value: item,
       })),
-    );
-    setRawText(JSON.stringify(nextRows, null, 2));
-    setParseError(null);
-  }, [value]);
+    [parsed.data],
+  );
 
   useImperativeHandle(ref, () => ({
-    getValue: () => rows.map((row) => row.value),
+    getValue: () => parsed.data,
   }));
 
-  useEffect(() => {
-    if (lastEditSource.current === "raw") {
-      return;
-    }
-    if (view !== "table") {
-      return;
-    }
-    setRawText(JSON.stringify(rows.map((row) => row.value), null, 2));
-    setParseError(null);
-  }, [rows, view]);
-
-  const handleRawChange = (nextValue: string) => {
-    lastEditSource.current = "raw";
-    setRawText(nextValue);
-    try {
-      const parsed = JSON.parse(nextValue);
-      if (Array.isArray(parsed)) {
-        setRows(
-          parsed.map((item) => ({
-            id: `row-${Math.random().toString(36).slice(2, 8)}`,
-            value: String(item),
-          })),
-        );
-        setParseError(null);
-      } else {
-        setParseError("Raw content is not a JSON array.");
-      }
-    } catch {
-      setParseError("Invalid JSON.");
-    } finally {
-      lastEditSource.current = null;
-    }
-  };
-
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between border-b border-border bg-surface/50 px-6 py-3">
-        <div className="flex flex-wrap items-center gap-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          <span>Values</span>
+    <div className="flex min-h-0 flex-1 flex-col bg-surface/10">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-2/60 px-4 py-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+            View Mode
+          </span>
           <SegmentedControl
+            size="sm"
             value={view}
             onChange={(next) => setView(next)}
             items={[
-              { value: "raw", label: "Raw" },
-              { value: "table", label: "Table" },
+              { value: "raw", label: "Editor" },
+              { value: "table", label: "Items" },
             ]}
           />
         </div>
-        <span className="text-[10px] uppercase tracking-widest text-subtle">
-          list
-        </span>
       </div>
 
       <div className="custom-scrollbar flex-1 overflow-auto">
         {view === "table" ? (
-          <div className="flex flex-col gap-6">
-            <div>
-              <div className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-subtle">
-                Entries
-              </div>
+          <div className="p-4">
+            <div className="overflow-hidden rounded-lg border border-border bg-background/30">
               <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 border-b border-border bg-background text-[10px] font-bold uppercase tracking-wider text-subtle">
+                <thead className="sticky top-0 border-b border-border bg-surface/30 text-[10px] font-bold uppercase tracking-wider text-subtle">
                   <tr>
-                    <th className="px-6 py-3 w-1/3">Index</th>
-                    <th className="px-6 py-3">Value</th>
-                    <th className="px-6 py-3 w-16"></th>
+                    <th className="w-1/3 px-4 py-2">Index</th>
+                    <th className="px-4 py-2">Value</th>
+                    <th className="w-12 px-4 py-2"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   <ListTableEditor
                     rows={rows}
-                    onChange={(index, value) => {
-                      lastEditSource.current = "table";
-                      setRows((previous) =>
-                        previous.map((row, idx) =>
-                          idx === index ? { ...row, value } : row,
+                    onChange={(index, value) =>
+                      setRawText(
+                        JSON.stringify(
+                          rows.map((row, idx) => (idx === index ? value : row.value)),
+                          null,
+                          2,
                         ),
-                      );
-                    }}
+                      )
+                    }
                     onRemove={(index) =>
-                      setRows((previous) =>
-                        previous.filter((_, idx) => idx !== index),
+                      setRawText(
+                        JSON.stringify(
+                          rows.filter((_, idx) => idx !== index).map((row) => row.value),
+                          null,
+                          2,
+                        ),
                       )
                     }
                     onAdd={() =>
-                      setRows((previous) => [
-                        ...previous,
-                        { id: `row-${Date.now()}`, value: "" },
-                      ])
+                      setRawText(
+                        JSON.stringify([...rows.map((row) => row.value), ""], null, 2),
+                      )
                     }
                   />
                 </tbody>
               </table>
             </div>
+            {parseError ? (
+              <p className="mt-2 text-[11px] text-danger">{parseError}</p>
+            ) : null}
           </div>
         ) : (
-          <div className="p-6">
-            <JsonSyntaxTextarea
+          <div className="p-2">
+            <JsonAwareTextarea
               value={rawText}
-              onChange={handleRawChange}
-              className="min-h-[280px] rounded-lg border border-border bg-background/40"
+              onChange={setRawText}
+              className="h-full"
+              minHeightClassName="min-h-[320px]"
             />
             {parseError && (
               <p className="mt-2 text-[11px] text-danger">{parseError}</p>

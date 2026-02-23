@@ -14,6 +14,55 @@ const normalizeKeyType = (rawType: string | null | undefined): RedisKeyType => {
   return "unknown";
 };
 
+const DEFAULT_PAGE_SIZE = 100;
+const MAX_PAGE_SIZE = 500;
+
+const parsePageSize = (rawValue: string | null): number => {
+  const parsed = rawValue ? Number(rawValue) : DEFAULT_PAGE_SIZE;
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_PAGE_SIZE;
+  }
+  return Math.min(Math.floor(parsed), MAX_PAGE_SIZE);
+};
+
+const parseCursor = (rawValue: string | null): number => {
+  const parsed = rawValue ? Number(rawValue) : 0;
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return 0;
+  }
+  return Math.floor(parsed);
+};
+
+const normalizeTypeFilter = (rawType: string | null): Exclude<RedisKeyType, "unknown"> | undefined => {
+  const value = normalizeKeyType(rawType);
+  if (value === "unknown") {
+    return undefined;
+  }
+  return value;
+};
+
+const enrichKeys = async (client: any, keys: string[]) => {
+  if (!keys.length) {
+    return [] as Array<{ key: string; type: RedisKeyType; ttlSeconds: number | null }>;
+  }
+
+  const pipeline = client.multi();
+  keys.forEach((key) => {
+    pipeline.type(key);
+    pipeline.ttl(key);
+  });
+  const responses = await pipeline.exec();
+
+  return keys.map((key, index) => {
+    const type = String(responses?.[index * 2] ?? "unknown");
+    const ttl = Number(responses?.[index * 2 + 1]);
+    return {
+      key,
+      type: normalizeKeyType(type),
+      ttlSeconds: ttl >= 0 ? ttl : null,
+    };
+  });
+};
 
 export async function GET(
   request: NextRequest,
@@ -47,38 +96,30 @@ export async function GET(
   const pageSize = request.nextUrl.searchParams.get("pageSize");
   const cursor = request.nextUrl.searchParams.get("cursor");
   const db = request.nextUrl.searchParams.get("db");
+  const keyType = request.nextUrl.searchParams.get("type");
 
   try {
     const dbIndex = db ? Number(db) : undefined;
-    const scanCursor = cursor ? Number(cursor) : 0;
-    const count = pageSize ? Number(pageSize) : undefined;
+    const scanCursor = parseCursor(cursor);
+    const limit = parsePageSize(pageSize);
+    const normalizedPattern = pattern?.trim() ? pattern.trim() : "*";
+    const normalizedType = normalizeTypeFilter(keyType);
 
-    const result = await withRedisClient(connectionName, dbIndex, (client) =>
-      client.scan(scanCursor, {
-        MATCH: pattern,
-        COUNT: count,
-      }),
+    const result = await withRedisClient(
+      connectionName,
+      dbIndex,
+      (client) =>
+        client.scan(scanCursor, {
+          MATCH: normalizedPattern,
+          COUNT: limit,
+          ...(normalizedType ? { TYPE: normalizedType } : {}),
+        }),
     );
     const keys = result.keys ?? [];
     const nextCursor = Number(result.cursor ?? 0);
-
-    const enriched = await withRedisClient(connectionName, dbIndex, async (client) => {
-      const pipeline = client.multi();
-      keys.forEach((key) => {
-        pipeline.type(key);
-        pipeline.ttl(key);
-      });
-      const responses = await pipeline.exec();
-      return keys.map((key, index) => {
-        const type = String(responses?.[index * 2] ?? "unknown");
-        const ttl = Number(responses?.[index * 2 + 1]);
-        return {
-          key,
-          type: normalizeKeyType(type),
-          ttlSeconds: ttl >= 0 ? ttl : null,
-        };
-      });
-    });
+    const enriched = await withRedisClient(connectionName, dbIndex, (client) =>
+      enrichKeys(client, keys),
+    );
 
     const response: ApiResponse<RedisKeyScanResultWithInfo> = {
       isSuccess: true,

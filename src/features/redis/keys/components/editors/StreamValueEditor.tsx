@@ -71,66 +71,40 @@ export const StreamValueEditor = forwardRef<
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between border-b border-border bg-surface/50 px-6 py-3">
-        <div className="flex flex-wrap items-center gap-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          <span>Entries</span>
-        </div>
-        <span className="text-[10px] uppercase tracking-widest text-subtle">
-          stream
+    <div className="flex min-h-0 flex-1 flex-col bg-surface/10">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface-2/60 px-4 py-2">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+          Stream Entries
+        </span>
+        <span className="rounded bg-surface-3 px-2 py-0.5 text-[10px] uppercase tracking-wide text-subtle">
+          {safeEntries.length} existing
         </span>
       </div>
 
       <div className="custom-scrollbar flex min-h-0 flex-1 flex-col overflow-auto">
-        <div className="flex min-h-0 flex-1 flex-col gap-6">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 p-4">
           <div className="min-h-0 flex-1">
-            <div className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-subtle">
-              Existing entries
+            <div className="overflow-hidden rounded-lg border border-border bg-background/30">
+              <StreamTableViewer entries={safeEntries} />
             </div>
-            <table className="w-full text-left text-sm">
-              <thead className="sticky top-0 border-b border-border bg-background text-[10px] font-bold uppercase tracking-wider text-subtle">
-                <tr>
-                  <th className="px-6 py-3 w-1/3">Entry ID</th>
-                  <th className="px-6 py-3">Fields</th>
-                  <th className="px-6 py-3 w-16"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                <StreamTableViewer entries={safeEntries} />
-              </tbody>
-            </table>
           </div>
-          <div>
-            <div className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-subtle">
+          <div className="overflow-hidden rounded-lg border border-border bg-background/30">
+            <div className="border-b border-border bg-surface/30 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-subtle">
               Pending entries
             </div>
-            <table className="w-full text-left text-sm">
-              <thead className="sticky top-0 border-b border-border bg-background text-[10px] font-bold uppercase tracking-wider text-subtle">
-                <tr>
-                  <th className="px-6 py-3 w-1/3">Entry ID</th>
-                  <th className="px-6 py-3">Fields</th>
-                  <th className="px-6 py-3 w-16"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
+            <div className="divide-y divide-border">
                 {pendingDisplayEntries.length === 0 ? (
-                  <tr>
-                    <td className="px-6 py-4" colSpan={3}>
-                      <p className="text-xs text-subtle">
-                        No pending entries.
-                      </p>
-                    </td>
-                  </tr>
+                  <p className="px-4 py-3 text-xs text-subtle">No pending entries.</p>
                 ) : (
                   pendingDisplayEntries.map((entry, index) => (
-                    <tr
+                    <div
                       key={`pending-${entry.id}-${index}`}
-                      className="transition-colors hover:bg-surface/60"
+                      className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 transition-colors hover:bg-surface/60"
                     >
-                      <td className="px-6 py-3 font-mono text-xs text-warning">
+                      <div className="min-w-36 font-mono text-xs text-warning">
                         {entry.id}
-                      </td>
-                      <td className="px-6 py-3">
+                      </div>
+                      <div className="flex-1">
                         <div className="flex flex-wrap gap-2">
                           {Object.entries(entry.values).map(
                             ([field, value]) => (
@@ -146,8 +120,8 @@ export const StreamValueEditor = forwardRef<
                             ),
                           )}
                         </div>
-                      </td>
-                      <td className="px-6 py-3 text-right">
+                      </div>
+                      <div className="text-right">
                         <button
                           className="rounded border border-danger/40 bg-danger/10 px-2 py-1 text-[10px] uppercase text-danger transition hover:border-danger/70 hover:bg-danger/20"
                           type="button"
@@ -159,12 +133,11 @@ export const StreamValueEditor = forwardRef<
                         >
                           Remove
                         </button>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   ))
                 )}
-              </tbody>
-            </table>
+            </div>
           </div>
         </div>
       </div>
@@ -186,12 +159,12 @@ export const StreamValueEditor = forwardRef<
           </span>
         </button>
         {isAddEntryOpen ? (
-          <div className="px-6 pb-4">
+          <div className="px-4 pb-4">
             <div className="flex flex-col gap-3">
               <label className="flex flex-col gap-2 text-xs text-muted-foreground">
                 Entry ID (optional)
                 <Input
-                  className="rounded-md bg-background text-sm text-foreground"
+                  className="rounded-md bg-background/60 text-sm text-foreground"
                   value={entryId}
                   onChange={(event) => setEntryId(event.target.value)}
                   placeholder="Leave empty for auto id"
@@ -202,7 +175,7 @@ export const StreamValueEditor = forwardRef<
                 <JsonSyntaxTextarea
                   value={entryFields}
                   onChange={setEntryFields}
-                  className="min-h-[120px] rounded-lg border border-border bg-background/40"
+                  className="min-h-[120px] rounded-md border border-border bg-background/40"
                 />
               </label>
               {parseError && (

@@ -1,9 +1,10 @@
-import { ApiResponse, RedisKeyScanResultWithInfo } from "@/lib/types";
+import { ApiResponse, RedisKeyScanResultWithInfo, RedisKeyType } from "@/lib/types";
 import { withPluginBasePath } from "@/lib/pluginPaths";
 
 export type RedisKeysQuery = {
   connectionName: string;
   pattern?: string;
+  type?: Exclude<RedisKeyType, "unknown">;
   pageSize?: number;
   cursor?: number;
   db?: number;
@@ -12,12 +13,14 @@ export type RedisKeysQuery = {
 export async function fetchRedisKeys({
   connectionName,
   pattern,
+  type,
   pageSize,
   cursor,
   db,
 }: RedisKeysQuery): Promise<ApiResponse<RedisKeyScanResultWithInfo>> {
   const params = new URLSearchParams();
   if (pattern) params.set("pattern", pattern);
+  if (type) params.set("type", type);
   if (pageSize) params.set("pageSize", pageSize.toString());
   if (cursor) params.set("cursor", cursor.toString());
   if (db !== undefined && db !== null) params.set("db", db.toString());

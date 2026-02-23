@@ -1,9 +1,10 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from "react";
 import { HashTableEditor } from "@/features/redis/keys/components/table/HashTableEditor";
 import { RedisValueEditorHandle } from "@/features/redis/keys/components/editors/RedisValueEditorTypes";
-import { Input, JsonSyntaxTextarea, SegmentedControl } from "@openforgelabs/rainbow-ui";
+import { Input, SegmentedControl } from "@openforgelabs/rainbow-ui";
+import { JsonAwareTextarea } from "@/features/redis/keys/components/shared/JsonAwareTextarea";
 
 type HashRow = { id: string; field: string; value: string };
 
@@ -11,172 +12,174 @@ type HashValueEditorProps = {
   value: Record<string, string>;
 };
 
+function parseHashRaw(rawText: string): { data: Record<string, string>; error: string | null } {
+  try {
+    const parsed = JSON.parse(rawText);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return { data: {}, error: "Raw content is not a JSON object." };
+    }
+    const data = Object.entries(parsed as Record<string, unknown>).reduce<Record<string, string>>(
+      (acc, [field, val]) => {
+        acc[field] = String(val ?? "");
+        return acc;
+      },
+      {},
+    );
+    return { data, error: null };
+  } catch {
+    return { data: {}, error: "Invalid JSON." };
+  }
+}
+
 export const HashValueEditor = forwardRef<
   RedisValueEditorHandle,
   HashValueEditorProps
 >(({ value }, ref) => {
   const [view, setView] = useState<"table" | "raw">("raw");
-  const [rawText, setRawText] = useState(
-    JSON.stringify(value ?? {}, null, 2),
-  );
-  const [rows, setRows] = useState<HashRow[]>(
-    Object.entries(value ?? {}).map(([field, val]) => ({
-      id: `${field}-${Math.random().toString(36).slice(2, 8)}`,
-      field,
-      value: val,
-    })),
-  );
-  const [parseError, setParseError] = useState<string | null>(null);
-  const lastEditSource = useRef<"raw" | "table" | null>(null);
-
+  const [fieldQuery, setFieldQuery] = useState("");
+  const [rawText, setRawText] = useState(JSON.stringify(value ?? {}, null, 2));
   useEffect(() => {
-    const nextValue = value ?? {};
-    setRows(
-      Object.entries(nextValue).map(([field, val]) => ({
-        id: `${field}-${Math.random().toString(36).slice(2, 8)}`,
+    setRawText(JSON.stringify(value ?? {}, null, 2));
+    setFieldQuery("");
+  }, [value]);
+  const parsed = useMemo(() => parseHashRaw(rawText), [rawText]);
+  const parseError = parsed.error;
+  const rows = useMemo<HashRow[]>(
+    () =>
+      Object.entries(parsed.data).map(([field, val], index) => ({
+        id: `row-${index}`,
         field,
         value: val,
       })),
-    );
-    setRawText(JSON.stringify(nextValue, null, 2));
-    setParseError(null);
-  }, [value]);
+    [parsed.data],
+  );
 
   useImperativeHandle(ref, () => ({
-    getValue: () =>
-      rows.reduce<Record<string, string>>((acc, row) => {
-        if (row.field.trim()) {
-          acc[row.field] = row.value;
-        }
-        return acc;
-      }, {}),
+    getValue: () => parsed.data,
   }));
 
-  useEffect(() => {
-    if (lastEditSource.current === "raw") {
-      return;
-    }
-    if (view !== "table") {
-      return;
-    }
-    const nextRaw = JSON.stringify(
-      rows.reduce<Record<string, string>>((acc, row) => {
-        if (row.field.trim()) {
-          acc[row.field] = row.value;
-        }
-        return acc;
-      }, {}),
-      null,
-      2,
+  const filteredRows = rows
+    .map((row, index) => ({ ...row, originalIndex: index }))
+    .filter((row) =>
+      fieldQuery.trim()
+        ? row.field.toLowerCase().includes(fieldQuery.trim().toLowerCase())
+        : true,
     );
-    setRawText(nextRaw);
-    setParseError(null);
-  }, [rows, view]);
-
-  const handleRawChange = (nextValue: string) => {
-    lastEditSource.current = "raw";
-    setRawText(nextValue);
-    try {
-      const parsed = JSON.parse(nextValue);
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        setRows(
-          Object.entries(parsed as Record<string, string>).map(
-            ([field, val]) => ({
-              id: `${field}-${Math.random().toString(36).slice(2, 8)}`,
-              field,
-              value: val,
-            }),
-          ),
-        );
-        setParseError(null);
-      } else {
-        setParseError("Raw content is not a JSON object.");
-      }
-    } catch {
-      setParseError("Invalid JSON.");
-    } finally {
-      lastEditSource.current = null;
-    }
-  };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between border-b border-border bg-surface/50 px-6 py-3">
-        <div className="flex flex-wrap items-center gap-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          <span>Values</span>
+    <div className="flex min-h-0 flex-1 flex-col bg-surface/10">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-2/60 px-4 py-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+            View Mode
+          </span>
           <SegmentedControl
+            size="sm"
             value={view}
             onChange={(next) => setView(next)}
             items={[
-              { value: "raw", label: "Raw" },
-              { value: "table", label: "Table" },
+              { value: "raw", label: "Editor" },
+              { value: "table", label: "Fields" },
             ]}
           />
-          {view === "table" && (
-            <div className="flex items-center gap-2 rounded border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground">
-              <span className="material-symbols-outlined text-[14px]">
-                search
-              </span>
-              <Input
-                className="w-32 border-0 bg-transparent p-0 text-[11px] text-muted-foreground focus:ring-0"
-                placeholder="Filter fields..."
-              />
-            </div>
-          )}
         </div>
-        <span className="text-[10px] uppercase tracking-widest text-subtle">
-          hash
-        </span>
+        {view === "table" ? (
+          <div className="relative w-full max-w-48">
+            <span className="material-symbols-outlined pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[14px] text-subtle">
+              search
+            </span>
+            <Input
+              size="sm"
+              className="h-7 rounded-md bg-background/60 pl-7 text-[11px]"
+              placeholder="Filter fields..."
+              value={fieldQuery}
+              onChange={(event) => setFieldQuery(event.target.value)}
+            />
+          </div>
+        ) : null}
       </div>
 
       <div className="custom-scrollbar flex-1 overflow-auto">
         {view === "table" ? (
-          <div className="flex flex-col gap-6">
-            <div>
-              <div className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-subtle">
-                Entries
-              </div>
+          <div className="p-4">
+            <div className="overflow-hidden rounded-lg border border-border bg-background/30">
               <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 border-b border-border bg-background text-[10px] font-bold uppercase tracking-wider text-subtle">
+                <thead className="sticky top-0 border-b border-border bg-surface/30 text-[10px] font-bold uppercase tracking-wider text-subtle">
                   <tr>
-                    <th className="px-6 py-3 w-1/3">Field</th>
-                    <th className="px-6 py-3">Value</th>
-                    <th className="px-6 py-3 w-16"></th>
+                    <th className="w-1/3 px-4 py-2">Field</th>
+                    <th className="px-4 py-2">Value</th>
+                    <th className="w-12 px-4 py-2"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   <HashTableEditor
-                    rows={rows}
+                    rows={filteredRows}
                     onChange={(index, key, value) => {
-                      lastEditSource.current = "table";
-                      setRows((previous) =>
-                        previous.map((row, idx) =>
-                          idx === index ? { ...row, [key]: value } : row,
-                        ),
-                      );
+                      const nextRows = [...rows];
+                      const current = nextRows[index];
+                      if (!current) {
+                        return;
+                      }
+                      nextRows[index] = { ...current, [key]: value };
+                      const nextData = nextRows.reduce<Record<string, string>>((acc, row) => {
+                        if (row.field.trim()) {
+                          acc[row.field] = row.value;
+                        }
+                        return acc;
+                      }, {});
+                      setRawText(JSON.stringify(nextData, null, 2));
                     }}
                     onRemove={(index) =>
-                      setRows((previous) =>
-                        previous.filter((_, idx) => idx !== index),
+                      setRawText(
+                        JSON.stringify(
+                          rows
+                            .filter((_, idx) => idx !== index)
+                            .reduce<Record<string, string>>((acc, row) => {
+                              if (row.field.trim()) {
+                                acc[row.field] = row.value;
+                              }
+                              return acc;
+                            }, {}),
+                          null,
+                          2,
+                        ),
                       )
                     }
                     onAdd={() =>
-                      setRows((previous) => [
-                        ...previous,
-                        { id: `row-${Date.now()}`, field: "", value: "" },
-                      ])
+                      setRawText(
+                        JSON.stringify(
+                          rows
+                            .concat({
+                              id: `row-${rows.length}`,
+                              field: `new_field_${rows.length + 1}`,
+                              value: "",
+                            })
+                            .reduce<Record<string, string>>((acc, row) => {
+                              if (row.field.trim()) {
+                                acc[row.field] = row.value;
+                              }
+                              return acc;
+                            }, {}),
+                          null,
+                          2,
+                        ),
+                      )
                     }
                   />
                 </tbody>
               </table>
             </div>
+            {parseError ? (
+              <p className="mt-2 text-[11px] text-danger">{parseError}</p>
+            ) : null}
           </div>
         ) : (
-          <div className="p-6">
-            <JsonSyntaxTextarea
+          <div className="p-2">
+            <JsonAwareTextarea
               value={rawText}
-              onChange={handleRawChange}
-              className="min-h-[280px] rounded-lg border border-border bg-background/40"
+              onChange={setRawText}
+              className="h-full"
+              minHeightClassName="min-h-[320px]"
             />
             {parseError && (
               <p className="mt-2 text-[11px] text-danger">{parseError}</p>

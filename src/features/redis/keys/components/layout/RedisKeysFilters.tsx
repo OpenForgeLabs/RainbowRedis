@@ -6,6 +6,7 @@ import { RedisKeyType } from "@/lib/types";
 type RedisKeysFiltersProps = {
   pattern: string;
   filterType: "all" | RedisKeyType;
+  isListCollapsed: boolean;
   isLoading: boolean;
   typeFilters: Array<"all" | RedisKeyType>;
   db: number | "";
@@ -19,11 +20,13 @@ type RedisKeysFiltersProps = {
   onFlushDb: () => void;
   onSearch: () => void;
   onAddKey: () => void;
+  onToggleListPanel: () => void;
 };
 
 export function RedisKeysFilters({
   pattern,
   filterType,
+  isListCollapsed,
   isLoading,
   typeFilters,
   db,
@@ -37,14 +40,28 @@ export function RedisKeysFilters({
   onFlushDb,
   onSearch,
   onAddKey,
+  onToggleListPanel,
 }: RedisKeysFiltersProps) {
   return (
     <div className="border-b border-border p-4">
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-end gap-3">
+          <Button
+            className="h-10 px-2"
+            size="sm"
+            variant="outline"
+            tone="neutral"
+            onClick={onToggleListPanel}
+            title={isListCollapsed ? "Expand keys panel" : "Collapse keys panel"}
+            aria-label={isListCollapsed ? "Expand keys panel" : "Collapse keys panel"}
+          >
+            <span className="material-symbols-outlined text-[16px]">
+              {isListCollapsed ? "dock_to_right" : "dock_to_left"}
+            </span>
+          </Button>
           <label className="flex min-w-[220px] flex-1 flex-col gap-2">
             <span className="text-xs font-semibold uppercase text-subtle">
-              Regex Search
+              Pattern Search
             </span>
             <div className="flex items-center gap-2">
               <SearchInput
@@ -55,7 +72,7 @@ export function RedisKeysFilters({
                 onChange={(event) => onPatternChange(event.target.value)}
               />
               <span className="rounded bg-background px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
-                REGEX
+                WILDCARD
               </span>
             </div>
           </label>
