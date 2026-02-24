@@ -1,5 +1,6 @@
 import { ApiResponse, RedisKeyType, RedisKeyValue } from "@/lib/types";
 import { withPluginBasePath } from "@/lib/pluginPaths";
+import { fetchWithShellLoader } from "@/lib/shellLoader";
 
 export async function fetchRedisKeyValue(
   connectionName: string,
@@ -11,13 +12,14 @@ export async function fetchRedisKeyValue(
   params.set("type", type);
   if (db !== undefined && db !== null) params.set("db", db.toString());
   const query = params.toString();
-  const response = await fetch(
+  const response = await fetchWithShellLoader(
     withPluginBasePath(
       `/api/redis/connections/${connectionName}/keys/${encodeURIComponent(
         key,
       )}/value?${query}`,
     ),
     { cache: "no-store" },
+    "Loading key value...",
   );
 
   if (!response.ok) {
@@ -43,7 +45,7 @@ export async function updateRedisKeyValue(
   const params = new URLSearchParams();
   if (db !== undefined && db !== null) params.set("db", db.toString());
   const query = params.toString();
-  const response = await fetch(
+  const response = await fetchWithShellLoader(
     withPluginBasePath(
       `/api/redis/connections/${connectionName}/keys/${encodeURIComponent(
         key,
@@ -54,6 +56,7 @@ export async function updateRedisKeyValue(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type, value, expirySeconds }),
     },
+    "Updating key value...",
   );
 
   if (!response.ok) {
@@ -78,13 +81,14 @@ export async function deleteRedisKey(
   if (db !== undefined && db !== null) params.set("db", db.toString());
   if (confirmName) params.set("confirmName", confirmName);
   const query = params.toString();
-  const response = await fetch(
+  const response = await fetchWithShellLoader(
     withPluginBasePath(
       `/api/redis/connections/${connectionName}/keys/${encodeURIComponent(
         key,
       )}${query ? `?${query}` : ""}`,
     ),
     { method: "DELETE" },
+    "Deleting key...",
   );
 
   if (!response.ok) {
@@ -108,7 +112,7 @@ export async function renameRedisKey(
   const params = new URLSearchParams();
   if (db !== undefined && db !== null) params.set("db", db.toString());
   const query = params.toString();
-  const response = await fetch(
+  const response = await fetchWithShellLoader(
     withPluginBasePath(
       `/api/redis/connections/${connectionName}/keys/${encodeURIComponent(
         key,
@@ -119,6 +123,7 @@ export async function renameRedisKey(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ newKey }),
     },
+    "Renaming key...",
   );
 
   if (!response.ok) {
@@ -142,7 +147,7 @@ export async function expireRedisKey(
   const params = new URLSearchParams();
   if (db !== undefined && db !== null) params.set("db", db.toString());
   const query = params.toString();
-  const response = await fetch(
+  const response = await fetchWithShellLoader(
     withPluginBasePath(
       `/api/redis/connections/${connectionName}/keys/${encodeURIComponent(
         key,
@@ -153,6 +158,7 @@ export async function expireRedisKey(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ttlSeconds }),
     },
+    "Updating key TTL...",
   );
 
   if (!response.ok) {
@@ -175,11 +181,12 @@ export async function flushRedisDatabase(
   const params = new URLSearchParams();
   params.set("db", db.toString());
   params.set("confirmName", confirmName);
-  const response = await fetch(
+  const response = await fetchWithShellLoader(
     withPluginBasePath(
       `/api/redis/connections/${connectionName}/keys/flush?${params.toString()}`,
     ),
     { method: "POST" },
+    "Flushing database...",
   );
 
   if (!response.ok) {

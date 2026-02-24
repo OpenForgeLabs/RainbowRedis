@@ -1,4 +1,5 @@
 import { ApiResponse } from "@/lib/types";
+import { startShellLoader, stopShellLoader } from "@/lib/shellLoader";
 
 export type BaseClientConfig = {
   baseUrl: string;
@@ -29,6 +30,7 @@ export class BaseClient {
     const method = init.method ?? "GET";
     const url = `${this.baseUrl}${this.basePath}${path}`;
     const startedAt = Date.now();
+    const loaderToken = startShellLoader(this.resolveLoaderMessage(method, path));
     const truncate = (value: string, max = 2000) =>
       value.length > max ? `${value.slice(0, max)}…` : value;
     try {
@@ -112,7 +114,34 @@ export class BaseClient {
         reasons: [error instanceof Error ? error.message : "Unknown error"],
         data: undefined as T,
       };
+    } finally {
+      stopShellLoader(loaderToken);
     }
+  }
+
+  private resolveLoaderMessage(method: string, path: string): string {
+    const normalizedPath = path.toLowerCase();
+    const normalizedMethod = method.toUpperCase();
+
+    if (normalizedPath.includes("/keys")) {
+      if (normalizedMethod === "GET") return "Loading keys...";
+      if (normalizedPath.includes("/flush")) return "Flushing database...";
+      return "Updating key data...";
+    }
+
+    if (normalizedPath.includes("/summary") || normalizedPath.includes("/stats")) {
+      return "Loading Redis overview...";
+    }
+
+    if (normalizedPath.includes("/connections/test")) {
+      return "Testing connection...";
+    }
+
+    if (normalizedPath.includes("/connections")) {
+      return normalizedMethod === "GET" ? "Loading connections..." : "Saving connection...";
+    }
+
+    return "Loading data...";
   }
 
   async get<T>(path: string): Promise<ApiResponse<T>> {

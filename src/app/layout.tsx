@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "../styles/globals.css";
 import { AsyncProvider } from "@/lib/async/AsyncContext";
+import { ShellRouteLoaderBridge } from "@/components/ShellRouteLoaderBridge";
 import { HostedThemeBridge, ToastProvider } from "@openforgelabs/rainbow-ui";
 
 export const metadata: Metadata = {
@@ -26,6 +27,7 @@ export default function RootLayout({
         <AsyncProvider>
           <ToastProvider>
             <HostedThemeBridge allowedOrigins={[process.env.NEXT_PUBLIC_SHELL_ORIGIN ?? "http://localhost:3000"]} />
+            <ShellRouteLoaderBridge />
             {children}
           </ToastProvider>
         </AsyncProvider>

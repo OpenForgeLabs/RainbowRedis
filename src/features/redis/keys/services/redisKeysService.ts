@@ -1,5 +1,6 @@
 import { ApiResponse, RedisKeyScanResultWithInfo, RedisKeyType } from "@/lib/types";
 import { withPluginBasePath } from "@/lib/pluginPaths";
+import { fetchWithShellLoader } from "@/lib/shellLoader";
 
 export type RedisKeysQuery = {
   connectionName: string;
@@ -26,11 +27,12 @@ export async function fetchRedisKeys({
   if (db !== undefined && db !== null) params.set("db", db.toString());
   const query = params.toString();
 
-  const response = await fetch(
+  const response = await fetchWithShellLoader(
     withPluginBasePath(
       `/api/redis/connections/${connectionName}/keys${query ? `?${query}` : ""}`,
     ),
     { cache: "no-store" },
+    "Loading keys...",
   );
 
   if (!response.ok) {
