@@ -10,62 +10,14 @@ const manifest: PluginManifest = {
     openConnectionPath: "/{connectionName}/keys",
     schema: {
       title: "Add Redis Connection",
-      description:
-        "Add a Redis connection using a connection string or host credentials.",
+      description: "Add a Redis connection using a connection string.",
       fields: [
-        {
-          id: "name",
-          label: "Display Name",
-          type: "text",
-          placeholder: "e.g. Production Redis Cache",
-          required: true,
-        },
         {
           id: "connectionString",
           label: "Connection String",
           type: "textarea",
           placeholder: "localhost:6379,password=...,ssl=False,defaultDatabase=0",
-        },
-        {
-          id: "host",
-          label: "Host",
-          type: "text",
-          placeholder: "localhost",
-        },
-        {
-          id: "port",
-          label: "Port",
-          type: "number",
-          defaultValue: 6379,
-        },
-        {
-          id: "password",
-          label: "Password",
-          type: "password",
-          placeholder: "optional",
-        },
-        {
-          id: "useTls",
-          label: "Use TLS (SSL)",
-          type: "checkbox",
-          defaultValue: false,
-        },
-        {
-          id: "database",
-          label: "Database",
-          type: "number",
-          placeholder: "0",
-        },
-        {
-          id: "environment",
-          label: "Environment",
-          type: "select",
-          defaultValue: "development",
-          options: [
-            { label: "development", value: "development" },
-            { label: "staging", value: "staging" },
-            { label: "production", value: "production" },
-          ],
+          required: true,
         },
       ],
     },
@@ -75,7 +27,7 @@ const manifest: PluginManifest = {
       id: "overview",
       title: "Overview",
       route: "/{connectionName}",
-      icon: "insights",
+      icon: "database",
       type: "iframe",
     },
     {

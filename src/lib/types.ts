@@ -7,11 +7,11 @@ export type ApiResponse<T> = {
 
 export type RedisConnectionUpsertRequest = {
   name: string;
-  connectionString?: string | null;
-  host: string;
-  port: number;
+  connectionString: string;
+  host?: string;
+  port?: number;
   password?: string | null;
-  useTls: boolean;
+  useTls?: boolean;
   database?: number | null;
   environment?: "production" | "staging" | "development";
 };

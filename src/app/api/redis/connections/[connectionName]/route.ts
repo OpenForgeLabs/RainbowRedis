@@ -21,12 +21,7 @@ export async function GET(
       reasons: [],
       data: {
         name: connectionName,
-        connectionString: "",
-        host: "localhost",
-        port: 6379,
-        password: "",
-        useTls: false,
-        database: 0,
+        connectionString: "localhost:6379,password=***",
       },
     };
     return NextResponse.json(mock);
@@ -37,7 +32,6 @@ export async function GET(
     const sanitized = {
       ...payload,
       password: undefined,
-      connectionString: undefined,
     };
     const response: ApiResponse<RedisConnectionUpsertRequest> = {
       isSuccess: true,

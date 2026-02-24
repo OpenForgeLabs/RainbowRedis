@@ -61,30 +61,22 @@ const parseConnectionString = (raw: string) => {
 
 const buildClient = (payload: RedisConnectionPayload) => {
   const connectionString = payload.connectionString?.trim();
-  if (connectionString) {
-    const parsed = parseConnectionString(connectionString);
-    if ("url" in parsed) {
-      return createClient({ url: parsed.url });
-    }
-    return createClient({
-      socket: {
-        host: parsed.host,
-        port: parsed.port,
-        tls: parsed.useTls,
-      },
-      password: parsed.password,
-      database: parsed.database,
-    });
+  if (!connectionString) {
+    throw new Error("Missing Redis connection string.");
   }
 
+  const parsed = parseConnectionString(connectionString);
+  if ("url" in parsed) {
+    return createClient({ url: parsed.url });
+  }
   return createClient({
     socket: {
-      host: payload.host,
-      port: payload.port,
-      tls: payload.useTls,
+      host: parsed.host,
+      port: parsed.port,
+      tls: parsed.useTls,
     },
-    password: payload.password ?? undefined,
-    database: payload.database ?? undefined,
+    password: parsed.password,
+    database: parsed.database,
   });
 };
 
