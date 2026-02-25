@@ -1,4 +1,6 @@
+---
 "@openforgelabs/rainbow-redis": patch
+---
 
 Improve Redis key explorer interactions and search behavior.
 
