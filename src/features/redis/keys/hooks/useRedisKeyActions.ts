@@ -97,10 +97,7 @@ export function useRedisKeyActions({
       setHasEditorErrors(false);
       return;
     }
-    const interval = setInterval(() => {
-      setHasEditorErrors(Boolean(editorRef.current?.hasErrors?.()));
-    }, 200);
-    return () => clearInterval(interval);
+    setHasEditorErrors(Boolean(editorRef.current?.hasErrors?.()));
   }, [editorRef, selectedKey]);
 
   useEffect(() => {
@@ -205,8 +202,10 @@ export function useRedisKeyActions({
     }
     setTtlError(null);
     if (editorRef.current.hasErrors?.()) {
+      setHasEditorErrors(true);
       return;
     }
+    setHasEditorErrors(false);
     setIsSaving(true);
     setSaveError(null);
     try {

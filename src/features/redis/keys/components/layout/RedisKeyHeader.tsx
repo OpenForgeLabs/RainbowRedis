@@ -6,7 +6,6 @@ import { RedisKeyType } from "@/lib/types";
 type RedisKeyHeaderProps = {
   selectedKey: string | null;
   selectedType: RedisKeyType;
-  selectedValue: unknown;
   nameDraft: string;
   isRenaming: boolean;
   isSaving: boolean;
@@ -14,7 +13,6 @@ type RedisKeyHeaderProps = {
   ttlValue: string;
   ttlError?: string | null;
   saveError?: string | null;
-  typeDescription: string;
   isLocalKey: boolean;
   onRenameToggle: () => void;
   onNameChange: (value: string) => void;
@@ -29,7 +27,6 @@ type RedisKeyHeaderProps = {
 export function RedisKeyHeader({
   selectedKey,
   selectedType,
-  selectedValue,
   nameDraft,
   isRenaming,
   isSaving,
@@ -37,7 +34,6 @@ export function RedisKeyHeader({
   ttlValue,
   ttlError,
   saveError,
-  typeDescription,
   isLocalKey,
   onRenameToggle,
   onNameChange,
@@ -48,28 +44,12 @@ export function RedisKeyHeader({
   onDelete,
   onTypeChange,
 }: RedisKeyHeaderProps) {
-  const formatSize = (value?: unknown) => {
-    if (!value) {
-      return "-";
-    }
-    if (typeof value === "string") {
-      return `${value.length} B`;
-    }
-    if (Array.isArray(value)) {
-      return `${value.length} items`;
-    }
-    if (typeof value === "object") {
-      return `${Object.keys(value as Record<string, unknown>).length} fields`;
-    }
-    return "-";
-  };
-
   return (
     <div className="border-b border-border px-4 py-3">
       <div className="flex flex-col gap-3">
         <div className="flex min-w-0 flex-nowrap items-center justify-between gap-2">
           <div className="group flex min-w-0 max-w-[50%] items-center gap-2">
-            <div className="min-w-0 overflow-x-auto scrollbar-none">
+            <div className="min-w-0 overflow-hidden">
               {isRenaming ? (
                 <div className="flex items-center gap-2">
                   <Input
@@ -89,7 +69,7 @@ export function RedisKeyHeader({
                   </button>
                 </div>
               ) : (
-                <h3 className="whitespace-nowrap text-base font-bold leading-tight text-foreground">
+                <h3 className="truncate text-base font-bold leading-tight text-foreground">
                   {selectedKey ?? "Select a key"}
                 </h3>
               )}
@@ -185,30 +165,6 @@ export function RedisKeyHeader({
         {ttlError && (
           <p className="text-right text-[11px] text-danger">{ttlError}</p>
         )}
-
-        <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
-          <div>
-            <span className="block uppercase tracking-widest">Type</span>
-            <span
-              className="text-xs font-semibold text-accent"
-              title={typeDescription}
-            >
-              {selectedType ?? "unknown"}
-            </span>
-          </div>
-          <div className="h-6 w-px bg-border"></div>
-          <div>
-            <span className="block uppercase tracking-widest">Memory</span>
-            <span className="text-xs font-semibold">
-              {selectedValue ? formatSize(selectedValue) : "-"}
-            </span>
-          </div>
-          <div className="h-6 w-px bg-border"></div>
-          <div>
-            <span className="block uppercase tracking-widest">Encoding</span>
-            <span className="text-xs font-semibold font-mono">-</span>
-          </div>
-        </div>
       </div>
     </div>
   );

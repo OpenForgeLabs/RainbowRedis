@@ -5,26 +5,32 @@ import { fetchWithShellLoader } from "@/lib/shellLoader";
 export type RedisKeysQuery = {
   connectionName: string;
   pattern?: string;
+  exactKey?: string;
   type?: Exclude<RedisKeyType, "unknown">;
   pageSize?: number;
   cursor?: number;
   db?: number;
+  exhaustive?: boolean;
 };
 
 export async function fetchRedisKeys({
   connectionName,
   pattern,
+  exactKey,
   type,
   pageSize,
   cursor,
   db,
+  exhaustive,
 }: RedisKeysQuery): Promise<ApiResponse<RedisKeyScanResultWithInfo>> {
   const params = new URLSearchParams();
   if (pattern) params.set("pattern", pattern);
+  if (exactKey) params.set("exactKey", exactKey);
   if (type) params.set("type", type);
   if (pageSize) params.set("pageSize", pageSize.toString());
   if (cursor) params.set("cursor", cursor.toString());
   if (db !== undefined && db !== null) params.set("db", db.toString());
+  if (exhaustive) params.set("exhaustive", "true");
   const query = params.toString();
 
   const response = await fetchWithShellLoader(

@@ -37,22 +37,18 @@ const TYPE_BADGE_STYLES: Record<string, string> = {
   unknown: "bg-control/40 text-muted-foreground border-border",
 };
 
-const TYPE_DESCRIPTIONS: Record<RedisKeyType, string> = {
-  string: "Binary-safe string values, ideal for counters or cached payloads.",
-  hash: "Field-value maps that resemble objects or structured records.",
-  list: "Ordered collections useful for queues and timelines.",
-  set: "Unordered unique members for tags or membership tracking.",
-  zset: "Sorted sets with scores for rankings and leaderboards.",
-  stream: "Append-only event logs for messaging pipelines.",
-  unknown: "Unsupported or custom module type.",
-};
-
 type RedisKeysScreenProps = {
   connectionName: string;
 };
 
+type KeySearchMode = "pattern" | "pattern_exhaustive" | "exact";
+
 export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
   const [pattern, setPattern] = useState("");
+  const [patternDraft, setPatternDraft] = useState("");
+  const [exactKey, setExactKey] = useState("");
+  const [exactKeyDraft, setExactKeyDraft] = useState("");
+  const [searchMode, setSearchMode] = useState<KeySearchMode>("pattern");
   const [db, setDb] = useState<number | "">(0);
   const [filterType, setFilterType] = useState<"all" | RedisKeyType>("all");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -72,9 +68,11 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
   const editorRef = useRef<RedisValueEditorHandle>(null);
   const dragStateRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
-  const upsertTabWithLimit = useCallback((tabs: string[], key: string) => {
-    const withoutKey = tabs.filter((tab) => tab !== key);
-    const nextTabs = [...withoutKey, key];
+  const ensureTabWithLimit = useCallback((tabs: string[], key: string) => {
+    if (tabs.includes(key)) {
+      return tabs;
+    }
+    const nextTabs = [...tabs, key];
     if (nextTabs.length <= MAX_OPEN_TABS) {
       return nextTabs;
     }
@@ -103,9 +101,15 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
     loadKeysRef.current = loadKeys;
   }, [loadKeys]);
   const refreshKeys = useCallback(() => {
+    const normalizedPattern = pattern.trim();
+    const normalizedExactKey = exactKey.trim();
+    const isExactSearch = searchMode === "exact";
+    const exhaustiveSearch = searchMode === "pattern_exhaustive";
     loadKeysRef.current(
       {
-        pattern: pattern || undefined,
+        pattern: isExactSearch ? undefined : (normalizedPattern || undefined),
+        exactKey: isExactSearch ? (normalizedExactKey || undefined) : undefined,
+        exhaustive: !isExactSearch && exhaustiveSearch ? true : undefined,
         type:
           filterType === "all" || filterType === "unknown"
             ? undefined
@@ -121,15 +125,15 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
         [db]: undefined,
       }));
     }
-  }, [db, filterType, pattern]);
+  }, [db, filterType, pattern, exactKey, searchMode]);
 
   const selectKey = useCallback((nextKey: string | null) => {
     setSelectedKey(nextKey);
     if (!nextKey) {
       return;
     }
-    setOpenTabs((previous) => upsertTabWithLimit(previous, nextKey));
-  }, [upsertTabWithLimit]);
+    setOpenTabs((previous) => ensureTabWithLimit(previous, nextKey));
+  }, [ensureTabWithLimit]);
 
   const selectedInfoFromBackend = selectedKey
     ? keyInfoMap[selectedKey]
@@ -167,9 +171,27 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
     onRefreshKeyData: refreshKeyData,
   });
 
-  const handleSearch = () => {
-    refreshKeys();
-  };
+  const handleSearch = useCallback(() => {
+    const normalizedPatternDraft = patternDraft.trim();
+    const normalizedPatternApplied = pattern.trim();
+    const normalizedExactDraft = exactKeyDraft.trim();
+    const normalizedExactApplied = exactKey.trim();
+
+    if (searchMode === "exact") {
+      if (normalizedExactDraft === normalizedExactApplied) {
+        refreshKeys();
+        return;
+      }
+      setExactKey(exactKeyDraft);
+      return;
+    }
+
+    if (normalizedPatternDraft === normalizedPatternApplied) {
+      refreshKeys();
+      return;
+    }
+    setPattern(patternDraft);
+  }, [exactKey, exactKeyDraft, pattern, patternDraft, refreshKeys, searchMode]);
 
   const loadDbCount = useCallback(
     async (dbIndex: number, force = false) => {
@@ -259,19 +281,19 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
       const timeout = setTimeout(() => setSelectedKey(null), 0);
       return () => clearTimeout(timeout);
     }
-    if (!selectedKey || !filteredKeys.includes(selectedKey)) {
-      const timeout = setTimeout(() => setSelectedKey(filteredKeys[0]), 0);
+    if (selectedKey && !filteredKeys.includes(selectedKey)) {
+      const timeout = setTimeout(() => setSelectedKey(null), 0);
       return () => clearTimeout(timeout);
     }
     return undefined;
-  }, [filteredKeys, selectedKey, selectKey]);
+  }, [filteredKeys, selectedKey]);
 
   useEffect(() => {
     if (!selectedKey) {
       return;
     }
-    setOpenTabs((previous) => upsertTabWithLimit(previous, selectedKey));
-  }, [selectedKey, upsertTabWithLimit]);
+    setOpenTabs((previous) => ensureTabWithLimit(previous, selectedKey));
+  }, [selectedKey, ensureTabWithLimit]);
 
   useEffect(() => {
     if (!selectedKey) {
@@ -394,54 +416,82 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
 
               {!isListCollapsed ? (
                 <div
-                  className="flex min-h-0 flex-none flex-col border-r border-border bg-surface-2/30"
+                  className="relative flex min-h-0 flex-none flex-col border-r border-border bg-surface-2/30"
                   style={{ width: listPanelWidth }}
                 >
                   <div className="border-b border-border px-3 py-2">
                     <div className="mb-2 flex items-center gap-2">
-                      <button
-                        type="button"
-                        className="ui-focus rounded-[var(--rx-radius-sm)] p-1 text-muted-foreground hover:bg-surface-3 hover:text-foreground"
-                        onClick={() => setIsListCollapsed(true)}
-                        title="Collapse keys panel"
-                        aria-label="Collapse keys panel"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">dock_to_left</span>
-                      </button>
-                      <div className="min-w-0 flex-1">
+                      <div className="relative min-w-0 flex-1">
                         <input
-                          className="h-8 w-full rounded-[var(--rx-radius-md)] border border-border bg-control px-2 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none"
-                          placeholder="Search keys (wildcard)..."
-                          value={pattern}
-                          onChange={(event) => setPattern(event.target.value)}
+                          className="h-8 w-full rounded-[var(--rx-radius-md)] border border-border bg-control pl-2 pr-28 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none"
+                          placeholder={searchMode === "exact" ? "Exact key name..." : "Search keys (wildcard)..."}
+                          value={searchMode === "exact" ? exactKeyDraft : patternDraft}
+                          onChange={(event) => {
+                            if (searchMode === "exact") {
+                              setExactKeyDraft(event.target.value);
+                              return;
+                            }
+                            setPatternDraft(event.target.value);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                              handleSearch();
+                            }
+                          }}
                         />
-                      </div>
-                    </div>
-
-                    <div className="custom-scrollbar flex items-center gap-1 overflow-x-auto pb-1">
-                      {TYPE_FILTERS.map((type) => (
-                        <button
-                          key={type}
-                          className={`rounded px-2 py-1 text-[10px] font-bold uppercase transition-all ${
-                            filterType === type
-                              ? "border border-transparent bg-primary text-primary-foreground"
-                              : "border border-border/70 bg-background text-muted-foreground hover:border-border-strong hover:text-foreground"
-                          }`}
-                          type="button"
-                          onClick={() => setFilterType(type)}
+                        <select
+                          className="absolute right-1 top-1/2 h-5 w-24 -translate-y-1/2 rounded-[var(--rx-radius-sm)] border border-border bg-surface px-1.5 text-[9px] font-semibold uppercase tracking-wide text-foreground focus:border-ring focus:outline-none"
+                          value={searchMode}
+                          onChange={(event) =>
+                            setSearchMode(event.target.value as KeySearchMode)
+                          }
+                          aria-label="Search mode"
                         >
-                          {type}
-                          <span
-                            className={`ml-1 text-[9px] ${
+                          <option value="pattern">Pattern</option>
+                          <option value="pattern_exhaustive">Pattern (Exhaustive)</option>
+                          <option value="exact">Exact key</option>
+                        </select>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        tone="neutral"
+                        className="h-8 px-2"
+                        onClick={handleSearch}
+                        disabled={isLoading}
+                        title="Search"
+                        aria-label="Search"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">search</span>
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="custom-scrollbar flex items-center gap-1 overflow-x-auto pb-1">
+                        {TYPE_FILTERS.map((type) => (
+                          <button
+                            key={type}
+                            className={`rounded px-2 py-1 text-[10px] font-bold uppercase transition-all ${
                               filterType === type
-                                ? "text-primary-foreground/90"
-                                : "text-foreground"
+                                ? "border border-transparent bg-primary text-primary-foreground"
+                                : "border border-border/70 bg-background text-muted-foreground hover:border-border-strong hover:text-foreground"
                             }`}
+                            type="button"
+                            onClick={() => setFilterType(type)}
                           >
-                            {typeCounts[type] ?? 0}
-                          </span>
-                        </button>
-                      ))}
+                            {type}
+                            <span
+                              className={`ml-1 text-[9px] ${
+                                filterType === type
+                                  ? "text-primary-foreground/90"
+                                  : "text-foreground"
+                              }`}
+                            >
+                              {typeCounts[type] ?? 0}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
@@ -463,87 +513,134 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
                   />
                 </div>
               ) : (
-                <div className="hidden w-7 items-start justify-center border-r border-border bg-surface-2 pt-2 lg:flex">
-                  <button
-                    type="button"
-                    className="ui-focus rounded-[var(--rx-radius-sm)] p-1 text-muted-foreground hover:bg-surface-3 hover:text-foreground"
-                    onClick={() => setIsListCollapsed(false)}
-                    title="Expand keys panel"
-                    aria-label="Expand keys panel"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">dock_to_right</span>
-                  </button>
-                </div>
+                <div className="hidden w-4 border-r border-border bg-surface-2 lg:flex" />
               )}
 
-              {!isListCollapsed ? (
-                <button
-                  type="button"
-                  className="group hidden w-2 cursor-col-resize items-stretch bg-transparent lg:flex"
-                  onMouseDown={(event) => {
-                    dragStateRef.current = {
-                      startX: event.clientX,
-                      startWidth: listPanelWidth,
-                    };
-                  }}
-                  aria-label="Resize panels"
-                >
-                  <span className="mx-auto w-0.5 bg-border/70 group-hover:bg-primary/70" />
-                </button>
-              ) : null}
+              <div
+                className={`group relative hidden w-2 items-stretch bg-transparent lg:flex ${isListCollapsed ? "cursor-default" : "cursor-ew-resize"}`}
+                onMouseDown={(event) => {
+                  if (isListCollapsed) {
+                    return;
+                  }
+                  dragStateRef.current = {
+                    startX: event.clientX,
+                    startWidth: listPanelWidth,
+                  };
+                }}
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Resize panels"
+              >
+                <span className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    className="ui-focus pointer-events-auto inline-flex h-6 w-6 items-center justify-center rounded-md border border-border-subtle/70 bg-surface text-subtle shadow-[var(--rx-shadow-xs)] transition hover:border-border hover:bg-surface-2 hover:text-foreground"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setIsListCollapsed((previous) => !previous);
+                    }}
+                    onMouseDown={(event) => {
+                      event.stopPropagation();
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setIsListCollapsed((previous) => !previous);
+                      }
+                    }}
+                    title={isListCollapsed ? "Expand keys panel" : "Collapse keys panel"}
+                    aria-label={isListCollapsed ? "Expand keys panel" : "Collapse keys panel"}
+                  >
+                    <span className="material-symbols-outlined text-[14px]">
+                      {isListCollapsed ? "chevron_right" : "chevron_left"}
+                    </span>
+                  </span>
+                </span>
+                <span className="mx-auto w-0.5 bg-border/70 group-hover:bg-primary/70" />
+              </div>
 
               <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                 <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                  <div className="custom-scrollbar flex h-10 items-center overflow-x-auto border-b border-border bg-surface-2">
-                    {visibleTabs.length ? (
-                      visibleTabs.map((tabKey) => {
-                        const tabType = combinedKeyInfoMap[tabKey]?.type ?? "unknown";
-                        const active = tabKey === selectedKey;
-                        return (
-                          <div
-                            key={tabKey}
-                            className={`group flex h-full w-40 flex-none items-center gap-2 border-r border-border px-3 ${
-                              active ? "bg-surface border-t-2 border-t-primary" : "bg-surface-2"
-                            }`}
-                          >
-                            <button
-                              type="button"
-                              className={`min-w-0 flex-1 truncate text-left text-xs font-mono ${
-                                active ? "text-foreground" : "text-muted-foreground"
+                  <div className="flex h-10 items-center border-b border-border bg-surface-2">
+                    <div className="custom-scrollbar flex min-w-0 flex-1 items-center overflow-x-auto">
+                      {visibleTabs.length ? (
+                        visibleTabs.map((tabKey) => {
+                          const tabType = combinedKeyInfoMap[tabKey]?.type ?? "unknown";
+                          const active = tabKey === selectedKey;
+                          return (
+                            <div
+                              key={tabKey}
+                              className={`group flex h-full w-40 flex-none cursor-pointer items-center gap-2 border-r border-border px-3 ${
+                                active ? "bg-surface border-t-2 border-t-primary" : "bg-surface-2"
                               }`}
+                              role="button"
+                              tabIndex={0}
                               onClick={() => selectKey(tabKey)}
-                            >
-                              {tabKey}
-                            </button>
-                            <span className={`rounded border px-1.5 py-0.5 text-[9px] font-bold uppercase ${TYPE_BADGE_STYLES[tabType] ?? TYPE_BADGE_STYLES.unknown}`}>
-                              {tabType}
-                            </span>
-                            <button
-                              type="button"
-                              className="rounded p-0.5 text-subtle opacity-0 transition-opacity group-hover:opacity-100 hover:bg-surface-3 hover:text-foreground"
-                              aria-label={`Close tab ${tabKey}`}
-                              onClick={() => {
-                                setOpenTabs((previous) => previous.filter((item) => item !== tabKey));
-                                if (selectedKey === tabKey) {
-                                  const remainingTabs = visibleTabs.filter((item) => item !== tabKey);
-                                  selectKey(remainingTabs[remainingTabs.length - 1] ?? null);
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter" || event.key === " ") {
+                                  event.preventDefault();
+                                  selectKey(tabKey);
                                 }
                               }}
                             >
-                              <span className="material-symbols-outlined text-[14px]">close</span>
-                            </button>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="px-3 text-xs text-muted-foreground">No key tabs open</div>
-                    )}
+                              <button
+                                type="button"
+                                className={`min-w-0 flex-1 truncate text-left text-xs font-mono ${
+                                  active ? "text-foreground" : "text-muted-foreground"
+                                }`}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  selectKey(tabKey);
+                                }}
+                              >
+                                {tabKey}
+                              </button>
+                              <span className={`rounded border px-1.5 py-0.5 text-[9px] font-bold uppercase ${TYPE_BADGE_STYLES[tabType] ?? TYPE_BADGE_STYLES.unknown}`}>
+                                {tabType}
+                              </span>
+                              <button
+                                type="button"
+                                className="rounded p-0.5 text-subtle opacity-0 transition-opacity group-hover:opacity-100 hover:bg-surface-3 hover:text-foreground"
+                                aria-label={`Close tab ${tabKey}`}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setOpenTabs((previous) => previous.filter((item) => item !== tabKey));
+                                  if (selectedKey === tabKey) {
+                                    const remainingTabs = visibleTabs.filter((item) => item !== tabKey);
+                                    selectKey(remainingTabs[remainingTabs.length - 1] ?? null);
+                                  }
+                                }}
+                              >
+                                <span className="material-symbols-outlined text-[14px]">close</span>
+                              </button>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="px-3 text-xs text-muted-foreground">No key tabs open</div>
+                      )}
+                    </div>
+                    {visibleTabs.length ? (
+                      <button
+                        type="button"
+                        className="ui-focus mr-2 inline-flex h-7 flex-none items-center gap-1 rounded-[var(--rx-radius-sm)] border border-border-subtle/70 px-2 text-[11px] font-medium text-muted-foreground transition hover:border-border hover:bg-surface hover:text-foreground"
+                        onClick={() => {
+                          setOpenTabs([]);
+                          setSelectedKey(null);
+                        }}
+                        aria-label="Close all tabs"
+                        title="Close all tabs"
+                      >
+                        <span className="material-symbols-outlined text-[13px]">close</span>
+                        Close all
+                      </button>
+                    ) : null}
                   </div>
 
                   <RedisKeyHeader
                     selectedKey={selectedKey}
                     selectedType={selectedType}
-                    selectedValue={selectedValue?.value}
                     nameDraft={nameDraft}
                     isRenaming={isRenaming}
                     isSaving={isSaving}
@@ -555,7 +652,6 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
                     ttlValue={ttlDraft}
                     ttlError={ttlError}
                     saveError={saveError}
-                    typeDescription={TYPE_DESCRIPTIONS[selectedType]}
                     isLocalKey={isLocalKey}
                     onRenameToggle={() => setIsRenaming(true)}
                     onRenameConfirm={handleRenameConfirm}
@@ -584,8 +680,11 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
                         value={selectedValue?.value}
                       />
                     ) : (
-                      <div className="flex flex-1 items-center justify-center text-sm text-subtle">
-                        Select a key to view its value.
+                      <div className="flex flex-1 items-center justify-center">
+                        <div className="flex flex-col items-center gap-2 text-center">
+                          <span className="material-symbols-outlined text-[28px] text-subtle">key</span>
+                          <p className="text-sm text-subtle">Select a key to see its content.</p>
+                        </div>
                       </div>
                     )}
                   </div>

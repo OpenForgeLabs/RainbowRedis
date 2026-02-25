@@ -16,6 +16,7 @@ const normalizeKeyType = (rawType: string | null | undefined): RedisKeyType => {
 
 const DEFAULT_PAGE_SIZE = 100;
 const MAX_PAGE_SIZE = 500;
+const MAX_SCAN_ITERATIONS = 100;
 
 const parsePageSize = (rawValue: string | null): number => {
   const parsed = rawValue ? Number(rawValue) : DEFAULT_PAGE_SIZE;
@@ -39,6 +40,114 @@ const normalizeTypeFilter = (rawType: string | null): Exclude<RedisKeyType, "unk
     return undefined;
   }
   return value;
+};
+
+const parseExhaustive = (rawValue: string | null): boolean => {
+  if (!rawValue) {
+    return false;
+  }
+  return rawValue.toLowerCase() === "true";
+};
+
+const scanKeysPage = async (
+  client: any,
+  cursor: number,
+  match: string,
+  count: number,
+  type?: Exclude<RedisKeyType, "unknown">,
+) => {
+  let currentCursor = cursor;
+  const collected = new Set<string>();
+  let iterations = 0;
+
+  do {
+    const result = await client.scan(currentCursor, {
+      MATCH: match,
+      COUNT: count,
+      ...(type ? { TYPE: type } : {}),
+    });
+    for (const key of result.keys ?? []) {
+      collected.add(key);
+      if (collected.size >= count) {
+        break;
+      }
+    }
+    currentCursor = Number(result.cursor ?? 0);
+    iterations += 1;
+  } while (
+    collected.size < count &&
+    currentCursor !== 0 &&
+    iterations < MAX_SCAN_ITERATIONS
+  );
+
+  return {
+    keys: Array.from(collected).slice(0, count),
+    cursor: currentCursor,
+  };
+};
+
+const scanKeysExhaustive = async (
+  client: any,
+  match: string,
+  count: number,
+  type?: Exclude<RedisKeyType, "unknown">,
+) => {
+  let currentCursor = 0;
+  const collected = new Set<string>();
+  let iterations = 0;
+
+  do {
+    const result = await client.scan(currentCursor, {
+      MATCH: match,
+      COUNT: count,
+      ...(type ? { TYPE: type } : {}),
+    });
+    for (const key of result.keys ?? []) {
+      collected.add(key);
+      if (collected.size >= count) {
+        break;
+      }
+    }
+    currentCursor = Number(result.cursor ?? 0);
+    iterations += 1;
+  } while (
+    collected.size < count &&
+    currentCursor !== 0 &&
+    iterations < MAX_SCAN_ITERATIONS
+  );
+
+  return {
+    keys: Array.from(collected).slice(0, count),
+    cursor: 0,
+  };
+};
+
+const getExactKey = async (
+  client: any,
+  exactKey: string,
+  type?: Exclude<RedisKeyType, "unknown">,
+) => {
+  const pipeline = client.multi();
+  pipeline.exists(exactKey);
+  pipeline.type(exactKey);
+  pipeline.ttl(exactKey);
+  const responses = await pipeline.exec();
+  const exists = Number(responses?.[0] ?? 0) > 0;
+  if (!exists) {
+    return [] as Array<{ key: string; type: RedisKeyType; ttlSeconds: number | null }>;
+  }
+  const keyType = normalizeKeyType(String(responses?.[1] ?? "unknown"));
+  if (type && keyType !== type) {
+    return [] as Array<{ key: string; type: RedisKeyType; ttlSeconds: number | null }>;
+  }
+  const ttl = Number(responses?.[2]);
+  return [
+    {
+      key: exactKey,
+      type: keyType,
+      ttlSeconds: ttl >= 0 ? ttl : null,
+    },
+  ];
 };
 
 const enrichKeys = async (client: any, keys: string[]) => {
@@ -93,32 +202,47 @@ export async function GET(
   }
 
   const pattern = request.nextUrl.searchParams.get("pattern") ?? undefined;
+  const exactKey = request.nextUrl.searchParams.get("exactKey") ?? undefined;
   const pageSize = request.nextUrl.searchParams.get("pageSize");
   const cursor = request.nextUrl.searchParams.get("cursor");
   const db = request.nextUrl.searchParams.get("db");
   const keyType = request.nextUrl.searchParams.get("type");
+  const exhaustive = parseExhaustive(request.nextUrl.searchParams.get("exhaustive"));
 
   try {
     const dbIndex = db ? Number(db) : undefined;
     const scanCursor = parseCursor(cursor);
     const limit = parsePageSize(pageSize);
     const normalizedPattern = pattern?.trim() ? pattern.trim() : "*";
+    const normalizedExactKey = exactKey?.trim();
     const normalizedType = normalizeTypeFilter(keyType);
+    const isExactSearch = Boolean(normalizedExactKey);
 
-    const result = await withRedisClient(
+    const { keys, nextCursor, enriched } = await withRedisClient(
       connectionName,
       dbIndex,
-      (client) =>
-        client.scan(scanCursor, {
-          MATCH: normalizedPattern,
-          COUNT: limit,
-          ...(normalizedType ? { TYPE: normalizedType } : {}),
-        }),
-    );
-    const keys = result.keys ?? [];
-    const nextCursor = Number(result.cursor ?? 0);
-    const enriched = await withRedisClient(connectionName, dbIndex, (client) =>
-      enrichKeys(client, keys),
+      async (client) => {
+        if (isExactSearch && normalizedExactKey) {
+          const exact = await getExactKey(client, normalizedExactKey, normalizedType);
+          return {
+            keys: exact.map((item) => item.key),
+            nextCursor: 0,
+            enriched: exact,
+          };
+        }
+
+        const result = exhaustive
+          ? await scanKeysExhaustive(client, normalizedPattern, limit, normalizedType)
+          : await scanKeysPage(client, scanCursor, normalizedPattern, limit, normalizedType);
+        const scannedKeys = result.keys ?? [];
+        const scannedCursor = Number(result.cursor ?? 0);
+        const scannedEnriched = await enrichKeys(client, scannedKeys);
+        return {
+          keys: scannedKeys,
+          nextCursor: scannedCursor,
+          enriched: scannedEnriched,
+        };
+      },
     );
 
     const response: ApiResponse<RedisKeyScanResultWithInfo> = {
