@@ -81,6 +81,7 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
 
   const {
     data,
+    loadedKeys,
     error,
     isLoading,
     loadKeys,
@@ -247,9 +248,9 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
   );
 
   const allKeys = useMemo(() => {
-    const merged = [...localKeys, ...data.keys];
+    const merged = [...localKeys, ...loadedKeys];
     return Array.from(new Set(merged));
-  }, [localKeys, data.keys]);
+  }, [localKeys, loadedKeys]);
 
   const filteredKeys = useMemo(() => {
     if (filterType === "all") {
@@ -281,12 +282,12 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
       const timeout = setTimeout(() => setSelectedKey(null), 0);
       return () => clearTimeout(timeout);
     }
-    if (selectedKey && !filteredKeys.includes(selectedKey)) {
+    if (selectedKey && !filteredKeys.includes(selectedKey) && !openTabs.includes(selectedKey)) {
       const timeout = setTimeout(() => setSelectedKey(null), 0);
       return () => clearTimeout(timeout);
     }
     return undefined;
-  }, [filteredKeys, selectedKey]);
+  }, [filteredKeys, selectedKey, openTabs]);
 
   useEffect(() => {
     if (!selectedKey) {
@@ -678,6 +679,9 @@ export function RedisKeysScreen({ connectionName }: RedisKeysScreenProps) {
                         ref={editorRef}
                         type={selectedType}
                         value={selectedValue?.value}
+                        onSaveEmbeddedJson={() => {
+                          void handleSave();
+                        }}
                       />
                     ) : (
                       <div className="flex flex-1 items-center justify-center">

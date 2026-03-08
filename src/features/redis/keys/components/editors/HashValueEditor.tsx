@@ -10,6 +10,7 @@ type HashRow = { id: string; field: string; value: string };
 
 type HashValueEditorProps = {
   value: Record<string, string>;
+  onSaveEmbeddedJson?: () => void | Promise<void>;
 };
 
 function parseHashRaw(rawText: string): { data: Record<string, string>; error: string | null } {
@@ -34,7 +35,7 @@ function parseHashRaw(rawText: string): { data: Record<string, string>; error: s
 export const HashValueEditor = forwardRef<
   RedisValueEditorHandle,
   HashValueEditorProps
->(({ value }, ref) => {
+>(({ value, onSaveEmbeddedJson }, ref) => {
   const [view, setView] = useState<"table" | "raw">("raw");
   const [fieldQuery, setFieldQuery] = useState("");
   const [rawText, setRawText] = useState(JSON.stringify(value ?? {}, null, 2));
@@ -99,7 +100,7 @@ export const HashValueEditor = forwardRef<
         ) : null}
       </div>
 
-      <div className="custom-scrollbar flex-1 overflow-auto">
+      <div className="custom-scrollbar flex-1 overflow-hidden">
         {view === "table" ? (
           <div className="p-4">
             <div className="overflow-hidden rounded-lg border border-border bg-background/30">
@@ -174,10 +175,11 @@ export const HashValueEditor = forwardRef<
             ) : null}
           </div>
         ) : (
-          <div className="p-2">
+          <div className="flex h-full min-h-0 flex-col p-2">
             <JsonAwareTextarea
               value={rawText}
               onChange={setRawText}
+              onSaveEmbeddedJson={onSaveEmbeddedJson}
               className="h-full"
               minHeightClassName="min-h-[320px]"
             />

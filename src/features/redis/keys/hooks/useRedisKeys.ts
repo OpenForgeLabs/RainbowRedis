@@ -21,6 +21,7 @@ const DEFAULT_RESULT: RedisKeyScanResult = { keys: [], cursor: 0 };
 
 export function useRedisKeys(connectionName: string) {
   const [state, setState] = useState<RedisKeysState>({ data: DEFAULT_RESULT });
+  const [loadedKeys, setLoadedKeys] = useState<string[]>([]);
   const [params, setParams] = useState<Omit<RedisKeysQuery, "connectionName">>({
     pageSize: 100,
     cursor: 0,
@@ -56,6 +57,7 @@ export function useRedisKeys(connectionName: string) {
       setParams(merged);
       if (resetHistory) {
         setCursorHistory([]);
+        setLoadedKeys([]);
       }
       try {
         const response = await run({ connectionName, ...merged }) as ApiResponse<RedisKeyScanResultWithInfo>;
@@ -67,6 +69,19 @@ export function useRedisKeys(connectionName: string) {
           return;
         }
         const enriched = response.data ?? { keys: [], cursor: 0 };
+        const pageKeys = enriched.keys.map((info) => info.key);
+        setLoadedKeys((previous) => {
+          if (resetHistory) {
+            return pageKeys;
+          }
+          const mergedKeys = [...previous];
+          for (const key of pageKeys) {
+            if (!mergedKeys.includes(key)) {
+              mergedKeys.push(key);
+            }
+          }
+          return mergedKeys;
+        });
         setKeyInfoMap((previous) => {
           const nextMap = { ...previous };
           enriched.keys.forEach((info) => {
@@ -207,6 +222,7 @@ export function useRedisKeys(connectionName: string) {
 
   return {
     data: state.data,
+    loadedKeys,
     error: state.error ?? error,
     isLoading,
     params,

@@ -13,29 +13,41 @@ import { RedisValueEditorHandle } from "@/features/redis/keys/components/editors
 type RedisKeyValueEditorProps = {
   type: RedisKeyType;
   value: unknown;
+  onSaveEmbeddedJson?: () => void | Promise<void>;
 };
 
 export const RedisKeyValueEditor = forwardRef<
   RedisValueEditorHandle,
   RedisKeyValueEditorProps
->(({ type, value }, ref) => {
+>(({ type, value, onSaveEmbeddedJson }, ref) => {
   if (type === "hash") {
     return (
       <HashValueEditor
         ref={ref}
         value={(value as Record<string, string>) ?? {}}
+        onSaveEmbeddedJson={onSaveEmbeddedJson}
       />
     );
   }
 
   if (type === "list") {
     return (
-      <ListValueEditor ref={ref} value={(value as string[]) ?? []} />
+      <ListValueEditor
+        ref={ref}
+        value={(value as string[]) ?? []}
+        onSaveEmbeddedJson={onSaveEmbeddedJson}
+      />
     );
   }
 
   if (type === "set") {
-    return <SetValueEditor ref={ref} value={(value as string[]) ?? []} />;
+    return (
+      <SetValueEditor
+        ref={ref}
+        value={(value as string[]) ?? []}
+        onSaveEmbeddedJson={onSaveEmbeddedJson}
+      />
+    );
   }
 
   if (type === "zset") {
@@ -43,6 +55,7 @@ export const RedisKeyValueEditor = forwardRef<
       <ZsetValueEditor
         ref={ref}
         value={(value as RedisZSetEntry[]) ?? []}
+        onSaveEmbeddedJson={onSaveEmbeddedJson}
       />
     );
   }
@@ -56,7 +69,13 @@ export const RedisKeyValueEditor = forwardRef<
     );
   }
 
-  return <StringValueEditor ref={ref} value={value} />;
+  return (
+    <StringValueEditor
+      ref={ref}
+      value={value}
+      onSaveEmbeddedJson={onSaveEmbeddedJson}
+    />
+  );
 });
 
 RedisKeyValueEditor.displayName = "RedisKeyValueEditor";

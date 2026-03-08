@@ -8,12 +8,13 @@ import { JsonAwareTextarea } from "@/features/redis/keys/components/shared/JsonA
 
 type StringValueEditorProps = {
   value: unknown;
+  onSaveEmbeddedJson?: () => void | Promise<void>;
 };
 
 export const StringValueEditor = forwardRef<
   RedisValueEditorHandle,
   StringValueEditorProps
->(({ value }, ref) => {
+>(({ value, onSaveEmbeddedJson }, ref) => {
   const [view, setView] = useState<"table" | "raw">("raw");
   const [contentFormat, setContentFormat] = useState<"auto" | "json" | "text">(
     "auto",
@@ -139,7 +140,7 @@ export const StringValueEditor = forwardRef<
         </div>
       </div>
 
-      <div className="custom-scrollbar flex-1 overflow-auto">
+      <div className="custom-scrollbar flex-1 overflow-hidden">
         {view === "table" ? (
           <div className="p-4">
             <div className="overflow-hidden rounded-lg border border-border bg-background/30">
@@ -162,6 +163,7 @@ export const StringValueEditor = forwardRef<
             <JsonAwareTextarea
               value={rawText}
               onChange={setRawText}
+              onSaveEmbeddedJson={onSaveEmbeddedJson}
               className="h-full"
               minHeightClassName="min-h-[320px]"
             />

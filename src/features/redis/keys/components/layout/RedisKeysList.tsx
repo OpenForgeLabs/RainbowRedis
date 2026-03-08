@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { RedisKeyType, RedisKeyValue } from "@/lib/types";
 
 type RedisKeysListProps = {
@@ -35,6 +36,18 @@ export function RedisKeysList({
   onPreviousPage,
   typeBadgeStyles,
 }: RedisKeysListProps) {
+  const rowRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  useEffect(() => {
+    if (!selectedKey) {
+      return;
+    }
+    const selectedRow = rowRefs.current[selectedKey];
+    if (selectedRow) {
+      selectedRow.scrollIntoView({ block: "nearest" });
+    }
+  }, [selectedKey, keys]);
+
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col border-b border-border lg:border-b-0 lg:border-r">
       <div className="flex items-center border-b border-border bg-surface/50 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-subtle">
@@ -54,6 +67,9 @@ export function RedisKeysList({
           return (
             <button
               key={key}
+              ref={(node) => {
+                rowRefs.current[key] = node;
+              }}
               className={`flex w-full items-center border-b border-border/50 px-4 py-3 text-left text-sm transition-all ${
                 key === selectedKey
                   ? "border-l-2 border-l-accent bg-accent/20 text-foreground"

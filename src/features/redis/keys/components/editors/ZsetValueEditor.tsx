@@ -10,12 +10,13 @@ type ZsetRow = { id: string; member: string; score: string };
 
 type ZsetValueEditorProps = {
   value: Array<{ member: string; score: number }>;
+  onSaveEmbeddedJson?: () => void | Promise<void>;
 };
 
 export const ZsetValueEditor = forwardRef<
   RedisValueEditorHandle,
   ZsetValueEditorProps
->(({ value }, ref) => {
+>(({ value, onSaveEmbeddedJson }, ref) => {
   const [view, setView] = useState<"table" | "raw">("raw");
   const [rawText, setRawText] = useState(
     JSON.stringify(Array.isArray(value) ? value : [], null, 2),
@@ -91,7 +92,7 @@ export const ZsetValueEditor = forwardRef<
         </div>
       </div>
 
-      <div className="custom-scrollbar flex-1 overflow-auto">
+      <div className="custom-scrollbar flex-1 overflow-hidden">
         {view === "table" ? (
           <div className="p-4">
             <div className="overflow-hidden rounded-lg border border-border bg-background/30">
@@ -149,10 +150,11 @@ export const ZsetValueEditor = forwardRef<
             ) : null}
           </div>
         ) : (
-          <div className="p-2">
+          <div className="flex h-full min-h-0 flex-col p-2">
             <JsonAwareTextarea
               value={rawText}
               onChange={setRawText}
+              onSaveEmbeddedJson={onSaveEmbeddedJson}
               className="h-full"
               minHeightClassName="min-h-[320px]"
             />

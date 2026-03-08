@@ -10,12 +10,13 @@ type SetRow = { id: string; value: string };
 
 type SetValueEditorProps = {
   value: string[];
+  onSaveEmbeddedJson?: () => void | Promise<void>;
 };
 
 export const SetValueEditor = forwardRef<
   RedisValueEditorHandle,
   SetValueEditorProps
->(({ value }, ref) => {
+>(({ value, onSaveEmbeddedJson }, ref) => {
   const [view, setView] = useState<"table" | "raw">("raw");
   const [rawText, setRawText] = useState(JSON.stringify(Array.isArray(value) ? value : [], null, 2));
   useEffect(() => {
@@ -74,7 +75,7 @@ export const SetValueEditor = forwardRef<
         </div>
       </div>
 
-      <div className="custom-scrollbar flex-1 overflow-auto">
+      <div className="custom-scrollbar flex-1 overflow-hidden">
         {view === "table" ? (
           <div className="p-4">
             <div className="overflow-hidden rounded-lg border border-border bg-background/30">
@@ -122,10 +123,11 @@ export const SetValueEditor = forwardRef<
             ) : null}
           </div>
         ) : (
-          <div className="p-2">
+          <div className="flex h-full min-h-0 flex-col p-2">
             <JsonAwareTextarea
               value={rawText}
               onChange={setRawText}
+              onSaveEmbeddedJson={onSaveEmbeddedJson}
               className="h-full"
               minHeightClassName="min-h-[320px]"
             />
